@@ -130,7 +130,120 @@ const DEFAULT_MANAGERS = {
   farEast: 'Людмила'
 };
 
-const REGION_DISTRICT = {
+const REGION_DISTRICT_EXACT = {
+  // Центральный
+  'белгородская': 'central',
+  'брянская': 'central',
+  'владимирская': 'central',
+  'воронежская': 'central',
+  'ивановская': 'central',
+  'калужская': 'central',
+  'костромская': 'central',
+  'курская': 'central',
+  'липецкая': 'central',
+  'московская': 'central',
+  'москва': 'central',
+  'орловская': 'central',
+  'рязанская': 'central',
+  'смоленская': 'central',
+  'тамбовская': 'central',
+  'тверская': 'central',
+  'тульская': 'central',
+  'ярославская': 'central',
+
+  // Северо-Западный
+  'карелия': 'northwest',
+  'коми': 'northwest',
+  'архангельская': 'northwest',
+  'ненецкий': 'northwest',
+  'вологодская': 'northwest',
+  'калининградская': 'northwest',
+  'ленинградская': 'northwest',
+  'мурманская': 'northwest',
+  'новгородская': 'northwest',
+  'псковская': 'northwest',
+  'санкт-петербург': 'northwest',
+  'петербург': 'northwest',
+  'спб': 'northwest',
+
+  // Южный
+  'адыгея': 'south',
+  'калмыкия': 'south',
+  'крым': 'south',
+  'краснодарский': 'south',
+  'астраханская': 'south',
+  'волгоградская': 'south',
+  'ростовская': 'south',
+  'севастополь': 'south',
+
+  // Северо-Кавказский
+  'дагестан': 'northCaucasus',
+  'ингушетия': 'northCaucasus',
+  'кабардино-балкарская': 'northCaucasus',
+  'карачаево-черкесская': 'northCaucasus',
+  'северная осетия': 'northCaucasus',
+  'северная осетия алания': 'northCaucasus',
+  'алания': 'northCaucasus',
+  'чеченская': 'northCaucasus',
+  'ставропольский': 'northCaucasus',
+
+  // Приволжский
+  'башкортостан': 'volga',
+  'башкирия': 'volga',
+  'марий эл': 'volga',
+  'мордовия': 'volga',
+  'татарстан': 'volga',
+  'удмуртская': 'volga',
+  'чувашская': 'volga',
+  'пермский': 'volga',
+  'кировская': 'volga',
+  'нижегородская': 'volga',
+  'оренбургская': 'volga',
+  'пензенская': 'volga',
+  'самарская': 'volga',
+  'саратовская': 'volga',
+  'ульяновская': 'volga',
+
+  // Уральский
+  'курганская': 'ural',
+  'свердловская': 'ural',
+  'тюменская': 'ural',
+  'ханты-мансийский': 'ural',
+  'ханты-мансийский югра': 'ural',
+  'югра': 'ural',
+  'ямало-ненецкий': 'ural',
+  'челябинская': 'ural',
+
+  // Сибирский
+  'алтайский': 'siberian',
+  'алтай': 'siberian',
+  'тыва': 'siberian',
+  'тува': 'siberian',
+  'хакасия': 'siberian',
+  'красноярский': 'siberian',
+  'иркутская': 'siberian',
+  'кемеровская': 'siberian',
+  'кузбасс': 'siberian',
+  'новосибирская': 'siberian',
+  'омская': 'siberian',
+  'томская': 'siberian',
+
+  // Дальневосточный
+  'бурятия': 'farEast',
+  'саха': 'farEast',
+  'якутия': 'farEast',
+  'забайкальский': 'farEast',
+  'камчатский': 'farEast',
+  'приморский': 'farEast',
+  'хабаровский': 'farEast',
+  'амурская': 'farEast',
+  'магаданская': 'farEast',
+  'сахалинская': 'farEast',
+  'еврейская': 'farEast',
+  'чукотский': 'farEast'
+};
+
+const REGION_DISTRICT_STEMS = {
   // Центральный
   'белгород': 'central',
   'брянск': 'central',
@@ -141,7 +254,6 @@ const REGION_DISTRICT = {
   'костром': 'central',
   'курск': 'central',
   'липецк': 'central',
-  'москва': 'central',
   'московск': 'central',
   'орлов': 'central',
   'рязан': 'central',
@@ -162,9 +274,7 @@ const REGION_DISTRICT = {
   'мурман': 'northwest',
   'новгород': 'northwest',
   'псков': 'northwest',
-  'санкт-петербург': 'northwest',
   'петербург': 'northwest',
-  'спб': 'northwest',
 
   // Южный
   'адыге': 'south',
@@ -183,7 +293,7 @@ const REGION_DISTRICT = {
   'балкар': 'northCaucasus',
   'карачаево': 'northCaucasus',
   'черкес': 'northCaucasus',
-  'северная осет': 'northCaucasus',
+  'осет': 'northCaucasus',
   'алания': 'northCaucasus',
   'чечен': 'northCaucasus',
   'ставропол': 'northCaucasus',
@@ -215,8 +325,6 @@ const REGION_DISTRICT = {
   'челябин': 'ural',
 
   // Сибирский
-  'алтайский': 'siberian',
-  'республика алтай': 'siberian',
   'алтай': 'siberian',
   'тыва': 'siberian',
   'тува': 'siberian',
@@ -286,6 +394,7 @@ const CITY_DISTRICT = {
   'великий новгород': 'northwest',
   'петрозаводск': 'northwest',
   'сыктывкар': 'northwest',
+  'советск': 'northwest',
 
   // Южный
   'краснодар': 'south',
@@ -325,6 +434,8 @@ const CITY_DISTRICT = {
   // Приволжский
   'нижний новгород': 'volga',
   'дзержинск': 'volga',
+  'богородск': 'volga',
+  'шаранга': 'volga',
   'казань': 'volga',
   'набережные челны': 'volga',
   'альметьевск': 'volga',
@@ -401,7 +512,6 @@ const CITY_DISTRICT = {
   'барнаул': 'siberian',
   'бийск': 'siberian',
   'рубцовск': 'siberian',
-  'гorno-алтайск': 'siberian',
   'горно-алтайск': 'siberian',
   'абакан': 'siberian',
   'кызыл': 'siberian',
@@ -424,7 +534,6 @@ const CITY_DISTRICT = {
 };
 
 const AMBIGUOUS_CITIES = [
-  'советск',
   'троицк',
   'заречный',
   'мирный',
@@ -486,8 +595,10 @@ function normalizeText(value) {
     .toLowerCase()
     .replace(/[ё]/g, 'е')
     .replace(/\s+/g, ' ')
-    .replace(/область|обл\.?|республика|респ\.?|край|ао|автономный округ|г\.|город/gi, '')
     .replace(/[()"«»]/g, '')
+    .replace(/(^|\s)г\.(?=\s|$)/gi, ' ')
+    .replace(/(^|\s)(область|обл\.?|республика|респ\.?|край|ао|автономный округ|город)(?=\s|$)/gi, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -548,9 +659,13 @@ function getDistrictByRegion(region) {
 
   if (!normalized) return null;
 
-  for (const key in REGION_DISTRICT) {
+  if (REGION_DISTRICT_EXACT[normalized]) {
+    return REGION_DISTRICT_EXACT[normalized];
+  }
+
+  for (const key in REGION_DISTRICT_STEMS) {
     if (normalized.includes(key) || key.includes(normalized)) {
-      return REGION_DISTRICT[key];
+      return REGION_DISTRICT_STEMS[key];
     }
   }
 
