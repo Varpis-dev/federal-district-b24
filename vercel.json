@@ -1,1 +1,18 @@
-
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/*.php": {
+      "runtime": "vercel-php@0.7.3"
+    }
+  },
+  "routes": [
+    { "src": "/", "dest": "/api/settings.php" },
+    { "src": "/install", "dest": "/api/install.php" },
+    { "src": "/settings", "dest": "/api/settings.php" },
+    { "src": "/field", "dest": "/api/field.php" },
+    { "src": "/bind", "dest": "/api/bind.php" },
+    { "src": "/contact", "dest": "/api/contact.php" },
+    { "src": "/license", "dest": "/api/license.php" },
+    { "src": "/privacy", "dest": "/api/privacy.php" }
+  ]
+}
