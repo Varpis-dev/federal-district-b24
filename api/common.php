@@ -49,7 +49,9 @@ function callBitrix($method, $params, $auth) {
   if (!is_array($decoded)) {
     return [
       'error' => 'BAD_JSON',
-      'raw' => $raw
+      'json_error' => json_last_error_msg(),
+      'raw_length' => strlen($raw),
+      'raw_start' => substr($raw, 0, 1200)
     ];
   }
 
@@ -68,6 +70,8 @@ function normalizeAuth($input) {
       $auth['access_token'] = $input['AUTH_ID'];
     } elseif (!empty($input['auth']['AUTH_ID'])) {
       $auth['access_token'] = $input['auth']['AUTH_ID'];
+    } elseif (!empty($input['access_token'])) {
+      $auth['access_token'] = $input['access_token'];
     }
   }
 
@@ -535,6 +539,44 @@ function getFieldEnumItems($fieldMeta) {
   return [];
 }
 
+function getSelectedDealFieldsMeta($fieldCodes, $auth) {
+  $meta = [];
+  $fieldCodes = array_values(array_unique(array_filter($fieldCodes)));
+
+  foreach ($fieldCodes as $fieldCode) {
+    if (stripos($fieldCode, 'UF_CRM_') !== 0) {
+      continue;
+    }
+
+    $res = callBitrix('crm.deal.userfield.list', [
+      'filter' => [
+        'FIELD_NAME' => $fieldCode
+      ]
+    ], $auth);
+
+    if (!empty($res['error'])) {
+      continue;
+    }
+
+    $items = $res['result'] ?? [];
+
+    foreach ($items as $item) {
+      if (!is_array($item)) {
+        continue;
+      }
+
+      $code = $item['FIELD_NAME'] ?? '';
+
+      if ($code === $fieldCode) {
+        $meta[$fieldCode] = $item;
+        break;
+      }
+    }
+  }
+
+  return $meta;
+}
+
 function parseFieldValue($rawValue, $fieldCode, $fieldsMeta) {
   if (is_array($rawValue)) {
     if (array_key_exists('VALUE', $rawValue)) {
@@ -587,7 +629,10 @@ function getDistrictByRegion($region) {
   $stems = getRegionDistrictStems();
 
   foreach ($stems as $key => $districtKey) {
-    if (mb_strpos($normalized, $key, 0, 'UTF-8') !== false || mb_strpos($key, $normalized, 0, 'UTF-8') !== false) {
+    if (
+      mb_strpos($normalized, $key, 0, 'UTF-8') !== false ||
+      mb_strpos($key, $normalized, 0, 'UTF-8') !== false
+    ) {
       return $districtKey;
     }
   }
@@ -751,18 +796,12 @@ function calculateAndSyncDeal($dealId, $auth) {
     ];
   }
 
-  $fieldsRes = callBitrix('crm.deal.fields', [], $auth);
-
-  if (!empty($fieldsRes['error'])) {
-    return [
-      'success' => false,
-      'reason' => 'fields_error',
-      'error' => $fieldsRes
-    ];
-  }
-
   $deal = $dealRes['result'] ?? [];
-  $fieldsMeta = $fieldsRes['result'] ?? [];
+
+  $fieldsMeta = getSelectedDealFieldsMeta([
+    $cityField,
+    $regionField
+  ], $auth);
 
   $city = parseFieldValue($deal[$cityField] ?? '', $cityField, $fieldsMeta);
   $region = $regionField ? parseFieldValue($deal[$regionField] ?? '', $regionField, $fieldsMeta) : '';
