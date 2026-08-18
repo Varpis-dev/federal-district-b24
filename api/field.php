@@ -132,402 +132,6 @@ const DEFAULT_MANAGERS = {
   farEast: 'Людмила'
 };
 
-const REGION_DISTRICT_EXACT = {
-  'белгородская': 'central',
-  'брянская': 'central',
-  'владимирская': 'central',
-  'воронежская': 'central',
-  'ивановская': 'central',
-  'калужская': 'central',
-  'костромская': 'central',
-  'курская': 'central',
-  'липецкая': 'central',
-  'московская': 'central',
-  'москва': 'central',
-  'орловская': 'central',
-  'рязанская': 'central',
-  'смоленская': 'central',
-  'тамбовская': 'central',
-  'тверская': 'central',
-  'тульская': 'central',
-  'ярославская': 'central',
-
-  'карелия': 'northwest',
-  'коми': 'northwest',
-  'архангельская': 'northwest',
-  'ненецкий': 'northwest',
-  'вологодская': 'northwest',
-  'калининградская': 'northwest',
-  'ленинградская': 'northwest',
-  'мурманская': 'northwest',
-  'новгородская': 'northwest',
-  'псковская': 'northwest',
-  'санкт-петербург': 'northwest',
-  'петербург': 'northwest',
-  'спб': 'northwest',
-
-  'адыгея': 'south',
-  'калмыкия': 'south',
-  'крым': 'south',
-  'краснодарский': 'south',
-  'астраханская': 'south',
-  'волгоградская': 'south',
-  'ростовская': 'south',
-  'севастополь': 'south',
-
-  'дагестан': 'northCaucasus',
-  'ингушетия': 'northCaucasus',
-  'кабардино-балкарская': 'northCaucasus',
-  'карачаево-черкесская': 'northCaucasus',
-  'северная осетия': 'northCaucasus',
-  'северная осетия алания': 'northCaucasus',
-  'алания': 'northCaucasus',
-  'чеченская': 'northCaucasus',
-  'ставропольский': 'northCaucasus',
-
-  'башкортостан': 'volga',
-  'башкирия': 'volga',
-  'марий эл': 'volga',
-  'мордовия': 'volga',
-  'татарстан': 'volga',
-  'удмуртская': 'volga',
-  'чувашская': 'volga',
-  'пермский': 'volga',
-  'кировская': 'volga',
-  'нижегородская': 'volga',
-  'оренбургская': 'volga',
-  'пензенская': 'volga',
-  'самарская': 'volga',
-  'саратовская': 'volga',
-  'ульяновская': 'volga',
-
-  'курганская': 'ural',
-  'свердловская': 'ural',
-  'тюменская': 'ural',
-  'ханты-мансийский': 'ural',
-  'ханты-мансийский югра': 'ural',
-  'югра': 'ural',
-  'ямало-ненецкий': 'ural',
-  'челябинская': 'ural',
-
-  'алтайский': 'siberian',
-  'алтай': 'siberian',
-  'тыва': 'siberian',
-  'тува': 'siberian',
-  'хакасия': 'siberian',
-  'красноярский': 'siberian',
-  'иркутская': 'siberian',
-  'кемеровская': 'siberian',
-  'кузбасс': 'siberian',
-  'новосибирская': 'siberian',
-  'омская': 'siberian',
-  'томская': 'siberian',
-
-  'бурятия': 'farEast',
-  'саха': 'farEast',
-  'якутия': 'farEast',
-  'забайкальский': 'farEast',
-  'камчатский': 'farEast',
-  'приморский': 'farEast',
-  'хабаровский': 'farEast',
-  'амурская': 'farEast',
-  'магаданская': 'farEast',
-  'сахалинская': 'farEast',
-  'еврейская': 'farEast',
-  'чукотский': 'farEast'
-};
-
-const REGION_DISTRICT_STEMS = {
-  'белгород': 'central',
-  'брянск': 'central',
-  'владимир': 'central',
-  'воронеж': 'central',
-  'иванов': 'central',
-  'калуж': 'central',
-  'костром': 'central',
-  'курск': 'central',
-  'липецк': 'central',
-  'московск': 'central',
-  'орлов': 'central',
-  'рязан': 'central',
-  'смоленск': 'central',
-  'тамбов': 'central',
-  'твер': 'central',
-  'тульск': 'central',
-  'ярослав': 'central',
-
-  'карел': 'northwest',
-  'коми': 'northwest',
-  'архангел': 'northwest',
-  'ненец': 'northwest',
-  'вологод': 'northwest',
-  'калининград': 'northwest',
-  'ленинград': 'northwest',
-  'мурман': 'northwest',
-  'новгород': 'northwest',
-  'псков': 'northwest',
-  'петербург': 'northwest',
-
-  'адыге': 'south',
-  'калмык': 'south',
-  'крым': 'south',
-  'краснодар': 'south',
-  'астрахан': 'south',
-  'волгоград': 'south',
-  'ростов': 'south',
-  'севастопол': 'south',
-
-  'дагестан': 'northCaucasus',
-  'ингуш': 'northCaucasus',
-  'кабардино': 'northCaucasus',
-  'балкар': 'northCaucasus',
-  'карачаево': 'northCaucasus',
-  'черкес': 'northCaucasus',
-  'осет': 'northCaucasus',
-  'алания': 'northCaucasus',
-  'чечен': 'northCaucasus',
-  'ставропол': 'northCaucasus',
-
-  'башкортостан': 'volga',
-  'башкир': 'volga',
-  'марий': 'volga',
-  'мордов': 'volga',
-  'татарстан': 'volga',
-  'удмурт': 'volga',
-  'чуваш': 'volga',
-  'перм': 'volga',
-  'киров': 'volga',
-  'нижегород': 'volga',
-  'оренбург': 'volga',
-  'пенз': 'volga',
-  'самар': 'volga',
-  'саратов': 'volga',
-  'ульянов': 'volga',
-
-  'курган': 'ural',
-  'свердлов': 'ural',
-  'тюмен': 'ural',
-  'ханты': 'ural',
-  'югра': 'ural',
-  'ямало': 'ural',
-  'челябин': 'ural',
-
-  'алтай': 'siberian',
-  'тыва': 'siberian',
-  'тува': 'siberian',
-  'хакас': 'siberian',
-  'краснояр': 'siberian',
-  'иркут': 'siberian',
-  'кемеров': 'siberian',
-  'кузбасс': 'siberian',
-  'новосибир': 'siberian',
-  'омск': 'siberian',
-  'томск': 'siberian',
-
-  'бурят': 'farEast',
-  'саха': 'farEast',
-  'якут': 'farEast',
-  'забайкал': 'farEast',
-  'камчат': 'farEast',
-  'примор': 'farEast',
-  'хабаров': 'farEast',
-  'амур': 'farEast',
-  'магадан': 'farEast',
-  'сахалин': 'farEast',
-  'еврей': 'farEast',
-  'чукот': 'farEast'
-};
-
-const CITY_DISTRICT = {
-  'москва': 'central',
-  'балашиха': 'central',
-  'химки': 'central',
-  'мытищи': 'central',
-  'подольск': 'central',
-  'королев': 'central',
-  'люберцы': 'central',
-  'красногорск': 'central',
-  'одинцово': 'central',
-  'воронеж': 'central',
-  'липецк': 'central',
-  'тамбов': 'central',
-  'белгород': 'central',
-  'курск': 'central',
-  'орел': 'central',
-  'орёл': 'central',
-  'тула': 'central',
-  'рязань': 'central',
-  'калуга': 'central',
-  'брянск': 'central',
-  'смоленск': 'central',
-  'тверь': 'central',
-  'ярославль': 'central',
-  'владимир': 'central',
-  'иваново': 'central',
-  'кострома': 'central',
-
-  'санкт-петербург': 'northwest',
-  'петербург': 'northwest',
-  'калининград': 'northwest',
-  'мурманск': 'northwest',
-  'архангельск': 'northwest',
-  'северодвинск': 'northwest',
-  'вологда': 'northwest',
-  'череповец': 'northwest',
-  'псков': 'northwest',
-  'великий новгород': 'northwest',
-  'петрозаводск': 'northwest',
-  'сыктывкар': 'northwest',
-  'советск': 'northwest',
-
-  'краснодар': 'south',
-  'сочи': 'south',
-  'новороссийск': 'south',
-  'анапа': 'south',
-  'геленджик': 'south',
-  'ростов-на-дону': 'south',
-  'ростов на дону': 'south',
-  'таганрог': 'south',
-  'шахты': 'south',
-  'волгоград': 'south',
-  'волжский': 'south',
-  'астрахань': 'south',
-  'элиста': 'south',
-  'майкоп': 'south',
-  'симферополь': 'south',
-  'севастополь': 'south',
-  'ялта': 'south',
-
-  'махачкала': 'northCaucasus',
-  'каспийск': 'northCaucasus',
-  'дербент': 'northCaucasus',
-  'грозный': 'northCaucasus',
-  'ставрополь': 'northCaucasus',
-  'пятигорск': 'northCaucasus',
-  'кисловодск': 'northCaucasus',
-  'ессентуки': 'northCaucasus',
-  'невинномысск': 'northCaucasus',
-  'наличк': 'northCaucasus',
-  'нальчик': 'northCaucasus',
-  'владикавказ': 'northCaucasus',
-  'назрань': 'northCaucasus',
-  'черкесск': 'northCaucasus',
-
-  'нижний новгород': 'volga',
-  'дзержинск': 'volga',
-  'богородск': 'volga',
-  'шаранга': 'volga',
-  'казань': 'volga',
-  'набережные челны': 'volga',
-  'альметьевск': 'volga',
-  'нижнекамск': 'volga',
-  'йошкар-ола': 'volga',
-  'чебоксары': 'volga',
-  'саранск': 'volga',
-  'пенза': 'volga',
-  'кузнецк': 'volga',
-  'самара': 'volga',
-  'тольятти': 'volga',
-  'сызрань': 'volga',
-  'саратов': 'volga',
-  'энгельс': 'volga',
-  'балаково': 'volga',
-  'балашов': 'volga',
-  'ульяновск': 'volga',
-  'димитровград': 'volga',
-  'киров': 'volga',
-  'пермь': 'volga',
-  'березники': 'volga',
-  'соликамск': 'volga',
-  'уфа': 'volga',
-  'стерлитамак': 'volga',
-  'мелеуз': 'volga',
-  'салават': 'volga',
-  'нефтекамск': 'volga',
-  'оренбург': 'volga',
-  'орск': 'volga',
-  'бузулук': 'volga',
-  'ижевск': 'volga',
-  'сарапул': 'volga',
-
-  'екатеринбург': 'ural',
-  'нижний тагил': 'ural',
-  'каменск-уральский': 'ural',
-  'первоуральск': 'ural',
-  'челябинск': 'ural',
-  'магнитогорск': 'ural',
-  'миасс': 'ural',
-  'златоуст': 'ural',
-  'копейск': 'ural',
-  'курган': 'ural',
-  'тюмень': 'ural',
-  'тобольск': 'ural',
-  'сургут': 'ural',
-  'нижневартовск': 'ural',
-  'ханты-мансийск': 'ural',
-  'нефтеюганск': 'ural',
-  'новый уренгой': 'ural',
-  'ноябрьск': 'ural',
-  'надым': 'ural',
-  'салехард': 'ural',
-
-  'новосибирск': 'siberian',
-  'бердск': 'siberian',
-  'омск': 'siberian',
-  'томск': 'siberian',
-  'северск': 'siberian',
-  'красноярск': 'siberian',
-  'ачинск': 'siberian',
-  'норильск': 'siberian',
-  'иркутск': 'siberian',
-  'ангарск': 'siberian',
-  'братск': 'siberian',
-  'кемерово': 'siberian',
-  'новокузнецк': 'siberian',
-  'прокопьевск': 'siberian',
-  'киселевск': 'siberian',
-  'киселёвск': 'siberian',
-  'междуреченск': 'siberian',
-  'барнаул': 'siberian',
-  'бийск': 'siberian',
-  'рубцовск': 'siberian',
-  'горно-алтайск': 'siberian',
-  'абакан': 'siberian',
-  'кызыл': 'siberian',
-
-  'улан-удэ': 'farEast',
-  'чита': 'farEast',
-  'якутск': 'farEast',
-  'благовещенск': 'farEast',
-  'владивосток': 'farEast',
-  'артем': 'farEast',
-  'артём': 'farEast',
-  'уссурийск': 'farEast',
-  'находка': 'farEast',
-  'хабаровск': 'farEast',
-  'комсомольск-на-амуре': 'farEast',
-  'южно-сахалинск': 'farEast',
-  'магадан': 'farEast',
-  'петропавловск-камчатский': 'farEast'
-};
-
-const AMBIGUOUS_CITIES = [
-  'троицк',
-  'заречный',
-  'мирный',
-  'приморск',
-  'красный яр',
-  'никольск',
-  'красноармейск',
-  'лесной',
-  'октябрьский',
-  'первомайский',
-  'радужный',
-  'светлый',
-  'северный',
-  'центральный'
-];
-
 function bxCall(method, params = {}, timeoutMs = 15000) {
   return new Promise((resolve, reject) => {
     let finished = false;
@@ -566,27 +170,6 @@ function bxCall(method, params = {}, timeoutMs = 15000) {
       }
     }
   });
-}
-
-function normalizeText(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[ё]/g, 'е')
-    .replace(/\s+/g, ' ')
-    .replace(/[()"«»]/g, '')
-    .replace(/(^|\s)г\.(?=\s|$)/gi, ' ')
-    .replace(/(^|\s)(область|обл\.?|республика|респ\.?|край|ао|автономный округ|город)(?=\s|$)/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function normalizeCity(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[ё]/g, 'е')
-    .replace(/\s+/g, ' ')
-    .replace(/[()"«»]/g, '')
-    .trim();
 }
 
 function getFieldEnumItems(fieldMeta) {
@@ -632,38 +215,6 @@ function parseFieldValue(rawValue, fieldCode, fieldsMeta) {
   return value;
 }
 
-function getDistrictByRegion(region) {
-  const normalized = normalizeText(region);
-
-  if (!normalized) return null;
-
-  if (REGION_DISTRICT_EXACT[normalized]) {
-    return REGION_DISTRICT_EXACT[normalized];
-  }
-
-  for (const key in REGION_DISTRICT_STEMS) {
-    if (normalized.includes(key) || key.includes(normalized)) {
-      return REGION_DISTRICT_STEMS[key];
-    }
-  }
-
-  return null;
-}
-
-function getDistrictByCity(city) {
-  const normalized = normalizeCity(city);
-
-  if (!normalized) return null;
-
-  if (AMBIGUOUS_CITIES.includes(normalized)) {
-    return {
-      needRegion: true
-    };
-  }
-
-  return CITY_DISTRICT[normalized] || null;
-}
-
 function getManagerByDistrict(appOptions, districtKey) {
   const map = {
     central: appOptions.managerCentral || DEFAULT_MANAGERS.central,
@@ -679,48 +230,12 @@ function getManagerByDistrict(appOptions, districtKey) {
   return map[districtKey] || '';
 }
 
-function detectDistrict(city, region) {
-  const byRegion = getDistrictByRegion(region);
-
-  if (byRegion) {
-    return {
-      status: 'ok',
-      districtKey: byRegion,
-      source: 'region'
-    };
-  }
-
-  const byCity = getDistrictByCity(city);
-
-  if (byCity && byCity.needRegion) {
-    return {
-      status: 'need_region',
-      districtKey: null,
-      source: 'city'
-    };
-  }
-
-  if (byCity) {
-    return {
-      status: 'ok',
-      districtKey: byCity,
-      source: 'city'
-    };
-  }
-
-  return {
-    status: 'unknown',
-    districtKey: null,
-    source: null
-  };
-}
-
 async function syncPlainDistrictField(entityId, deal, districtName) {
   try {
     if (!entityId) return;
 
     const targetValue = districtName || '';
-    const currentValue = deal && typeof deal[OUTPUT_TEXT_FIELD] !== 'undefined'
+    const currentValue = typeof deal[OUTPUT_TEXT_FIELD] !== 'undefined'
       ? String(deal[OUTPUT_TEXT_FIELD] || '')
       : null;
 
@@ -733,16 +248,18 @@ async function syncPlainDistrictField(entityId, deal, districtName) {
 
     await bxCall('crm.deal.update', {
       id: entityId,
-      fields
+      fields,
+      params: {
+        REGISTER_SONET_EVENT: 'N',
+        REGISTER_HISTORY_EVENT: 'N'
+      }
     }, 15000);
   } catch (e) {
     console.log('Не удалось записать строковое поле федерального округа:', e);
   }
 }
 
-function renderOk(districtKey, manager, city, region, source) {
-  const districtName = DISTRICTS[districtKey] || 'Не определено';
-
+function renderOk(districtName, manager, city, region, source) {
   wrapEl.className = 'wrap';
 
   mainEl.textContent = manager
@@ -831,26 +348,32 @@ BX24.init(async function() {
       return;
     }
 
-    const result = detectDistrict(city, region);
+    const calcResponse = await fetch('/calc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ city, region })
+    });
 
-    if (result.status === 'need_region') {
+    const calcData = await calcResponse.json();
+    const calc = calcData.result || {};
+
+    if (calc.status === 'need_region') {
       await syncPlainDistrictField(entityId, deal, '');
       renderNeedRegion(city);
       return;
     }
 
-    if (result.status === 'unknown' || !result.districtKey) {
+    if (calc.status === 'unknown' || !calc.districtName) {
       await syncPlainDistrictField(entityId, deal, '');
       renderUnknown(city, region);
       return;
     }
 
-    const districtName = DISTRICTS[result.districtKey] || '';
-    const manager = getManagerByDistrict(appOptions, result.districtKey);
+    const manager = getManagerByDistrict(appOptions, calc.districtKey);
 
-    await syncPlainDistrictField(entityId, deal, districtName);
+    await syncPlainDistrictField(entityId, deal, calc.districtName);
 
-    renderOk(result.districtKey, manager, city, region, result.source);
+    renderOk(calc.districtName, manager, city, region, calc.source);
 
     if (window.BX24 && BX24.fitWindow) {
       BX24.fitWindow();
