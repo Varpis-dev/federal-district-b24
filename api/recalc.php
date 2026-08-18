@@ -43,17 +43,10 @@ if (!$cityField) {
   ]);
 }
 
-$fieldsRes = callBitrix('crm.deal.fields', [], $auth);
-
-if (!empty($fieldsRes['error'])) {
-  jsonResponse([
-    'success' => false,
-    'reason' => 'fields_error',
-    'error' => $fieldsRes
-  ]);
-}
-
-$fieldsMeta = $fieldsRes['result'] ?? [];
+$fieldsMeta = getSelectedDealFieldsMeta([
+  $cityField,
+  $regionField
+], $auth);
 
 $select = [
   'ID',
@@ -116,6 +109,10 @@ foreach ($deals as $deal) {
 
     if (!empty($sync['updated'])) {
       $stats['cleared']++;
+    } elseif (($sync['reason'] ?? '') === 'already_actual') {
+      $stats['already_actual']++;
+    } else {
+      $stats['errors']++;
     }
 
     continue;
@@ -147,7 +144,7 @@ foreach ($deals as $deal) {
     $stats['errors']++;
   }
 
-  if (count($details) < 10) {
+  if (count($details) < 20) {
     $details[] = [
       'deal_id' => $dealId,
       'city' => $city,
