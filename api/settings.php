@@ -82,6 +82,17 @@ header('Content-Type: text/html; charset=utf-8');
       color: #fff;
     }
 
+    button.recalc {
+      background: #19a55a;
+      border-color: #19a55a;
+      color: #fff;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
     #status {
       margin-top: 18px;
       white-space: pre-wrap;
@@ -89,7 +100,7 @@ header('Content-Type: text/html; charset=utf-8');
       background: #fff;
       padding: 14px;
       border-radius: 12px;
-      min-height: 76px;
+      min-height: 110px;
       border: 1px solid #e0e5eb;
       max-width: 920px;
     }
@@ -140,16 +151,22 @@ header('Content-Type: text/html; charset=utf-8');
 
   <div class="buttons">
     <button class="primary" id="saveBtn">Сохранить настройки</button>
-    <button id="bindBtn">Создать поле в сделке и привязать</button>
+    <button id="bindBtn">Создать поля и подключить события</button>
+    <button class="recalc" id="recalcBtn">Массово пересчитать старые сделки</button>
   </div>
 
   <div id="status">Страница загружена.</div>
 
 <script>
 const statusEl = document.getElementById('status');
+const recalcBtn = document.getElementById('recalcBtn');
 
 function setStatus(text) {
   statusEl.textContent = text;
+}
+
+function appendStatus(text) {
+  statusEl.textContent += '\n' + text;
 }
 
 function bxCall(method, params = {}, timeoutMs = 15000) {
@@ -200,7 +217,7 @@ function setInputValue(id, value) {
   document.getElementById(id).value = value || '';
 }
 
-function getSettingsPayload(current = {}) {
+function getSettingsPayload() {
   return {
     appName: 'Федеральный округ сделки',
 
@@ -272,7 +289,7 @@ async function loadFields() {
 
   applyManagerDefaults(options || {});
 
-  setStatus('Поля сделки загружены. Выберите город, область и сохраните настройки.');
+  setStatus('Поля сделки загружены.');
 }
 
 async function saveOptions() {
@@ -285,8 +302,7 @@ async function saveOptions() {
 
   setStatus('Сохраняю настройки...');
 
-  const current = await bxCall('app.option.get', {});
-  const payload = getSettingsPayload(current);
+  const payload = getSettingsPayload();
 
   await bxCall('app.option.set', { options: payload });
 
@@ -305,6 +321,100 @@ async function saveOptions() {
   );
 
   return payload;
+}
+
+async function runRecalc() {
+  recalcBtn.disabled = true;
+
+  try {
+    const saved = await saveOptions();
+    if (!saved) {
+      recalcBtn.disabled = false;
+      return;
+    }
+
+    const auth = BX24.getAuth();
+
+    if (!auth || !auth.access_token || !auth.domain) {
+      setStatus('Не удалось получить авторизацию Б24');
+      recalcBtn.disabled = false;
+      return;
+    }
+
+    let start = 0;
+    let total = {
+      processed: 0,
+      updated: 0,
+      already_actual: 0,
+      cleared: 0,
+      unknown: 0,
+      need_region: 0,
+      no_city: 0,
+      errors: 0
+    };
+
+    setStatus('Начинаю массовый пересчёт старых сделок...');
+
+    while (true) {
+      const r = await fetch('/recalc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auth,
+          start
+        })
+      });
+
+      const data = await r.json();
+
+      if (!data.success) {
+        setStatus('Ошибка пересчёта:\n' + JSON.stringify(data, null, 2));
+        break;
+      }
+
+      const stats = data.stats || {};
+
+      Object.keys(total).forEach(key => {
+        total[key] += Number(stats[key] || 0);
+      });
+
+      setStatus(
+        'Массовый пересчёт идёт...\n\n' +
+        'Обработано: ' + total.processed + '\n' +
+        'Обновлено: ' + total.updated + '\n' +
+        'Уже актуально: ' + total.already_actual + '\n' +
+        'Очищено: ' + total.cleared + '\n' +
+        'Нет города: ' + total.no_city + '\n' +
+        'Нужна область: ' + total.need_region + '\n' +
+        'Не определено: ' + total.unknown + '\n' +
+        'Ошибки: ' + total.errors + '\n\n' +
+        'Текущий start: ' + start
+      );
+
+      if (data.next === null || typeof data.next === 'undefined') {
+        setStatus(
+          'Массовый пересчёт завершён.\n\n' +
+          'Обработано: ' + total.processed + '\n' +
+          'Обновлено: ' + total.updated + '\n' +
+          'Уже актуально: ' + total.already_actual + '\n' +
+          'Очищено: ' + total.cleared + '\n' +
+          'Нет города: ' + total.no_city + '\n' +
+          'Нужна область: ' + total.need_region + '\n' +
+          'Не определено: ' + total.unknown + '\n' +
+          'Ошибки: ' + total.errors
+        );
+        break;
+      }
+
+      start = data.next;
+      await new Promise(resolve => setTimeout(resolve, 350));
+    }
+
+  } catch (e) {
+    setStatus('Ошибка массового пересчёта:\n' + String(e));
+  }
+
+  recalcBtn.disabled = false;
 }
 
 BX24.init(async function() {
@@ -331,7 +441,7 @@ BX24.init(async function() {
           return;
         }
 
-        setStatus('Создаю пользовательское поле в сделке...');
+        setStatus('Создаю поля и подключаю события...');
 
         const r = await fetch('/bind', {
           method: 'POST',
@@ -349,9 +459,11 @@ BX24.init(async function() {
           text
         );
       } catch (e) {
-        setStatus('Ошибка создания поля:\n' + String(e));
+        setStatus('Ошибка создания полей:\n' + String(e));
       }
     });
+
+    document.getElementById('recalcBtn').addEventListener('click', runRecalc);
 
   } catch (e) {
     setStatus('Ошибка инициализации:\n' + String(e));
