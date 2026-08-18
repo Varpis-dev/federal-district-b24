@@ -1,58 +1,7 @@
 <?php
+require_once __DIR__ . '/common.php';
+
 header('Content-Type: text/plain; charset=utf-8');
-
-function jsonResponse($data) {
-  echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-  exit;
-}
-
-function getBaseUrl() {
-  return 'https://' . $_SERVER['HTTP_HOST'];
-}
-
-function callBitrix($method, $params, $auth) {
-  if (empty($auth['domain']) || empty($auth['access_token'])) {
-    return [
-      'error' => 'NO_AUTH',
-      'error_description' => 'Нет domain или access_token'
-    ];
-  }
-
-  $domain = preg_replace('/[^a-zA-Z0-9\.\-]/', '', $auth['domain']);
-  $url = 'https://' . $domain . '/rest/' . $method . '.json';
-
-  $params['auth'] = $auth['access_token'];
-
-  $context = stream_context_create([
-    'http' => [
-      'method' => 'POST',
-      'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
-      'content' => http_build_query($params),
-      'timeout' => 20
-    ]
-  ]);
-
-  $raw = @file_get_contents($url, false, $context);
-
-  if ($raw === false) {
-    return [
-      'error' => 'HTTP_REQUEST_FAILED',
-      'error_description' => 'Не удалось выполнить запрос к Bitrix24',
-      'url' => $url
-    ];
-  }
-
-  $decoded = json_decode($raw, true);
-
-  if (!is_array($decoded)) {
-    return [
-      'error' => 'BAD_JSON',
-      'raw' => $raw
-    ];
-  }
-
-  return $decoded;
-}
 
 function getExistingDealField($fieldName, $auth) {
   $result = callBitrix('crm.deal.userfield.list', [
@@ -71,30 +20,33 @@ function getExistingDealField($fieldName, $auth) {
 $input = json_decode(file_get_contents('php://input'), true);
 
 if (!is_array($input)) {
-  jsonResponse([
+  echo json_encode([
     'success' => false,
     'error' => 'BAD_INPUT',
     'message' => 'Некорректный JSON'
-  ]);
+  ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+  exit;
 }
 
-$auth = $input['auth'] ?? null;
+$auth = normalizeAuth($input);
 
-if (!$auth) {
-  jsonResponse([
+if (empty($auth['domain']) || empty($auth['access_token'])) {
+  echo json_encode([
     'success' => false,
     'error' => 'NO_AUTH',
     'message' => 'Не передана авторизация'
-  ]);
+  ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+  exit;
 }
 
 $baseUrl = getBaseUrl();
 $fieldUrl = $baseUrl . '/field';
+$eventsUrl = $baseUrl . '/events';
 
 $visualUserTypeId = 'fed_district_manager';
 
 $visualFieldName = 'UF_CRM_FEDERAL_DISTRICT_MANAGER';
-$textFieldName = 'UF_CRM_FEDERAL_DISTRICT_TEXT';
+$textFieldName = OUTPUT_TEXT_FIELD;
 
 $typeResult = callBitrix('userfieldtype.add', [
   'USER_TYPE_ID' => $visualUserTypeId,
@@ -189,18 +141,32 @@ if (empty($textExisting)) {
   $textResult['create_result'] = $addTextResult;
 }
 
-jsonResponse([
+$eventBindAdd = callBitrix('event.bind', [
+  'event' => 'ONCRMDEALADD',
+  'handler' => $eventsUrl
+], $auth);
+
+$eventBindUpdate = callBitrix('event.bind', [
+  'event' => 'ONCRMDEALUPDATE',
+  'handler' => $eventsUrl
+], $auth);
+
+echo json_encode([
   'success' => true,
-  'message' => 'Проверка и создание полей завершены.',
+  'message' => 'Поля проверены/созданы, события подключены.',
   'visual_field' => $visualResult,
   'text_field' => $textResult,
+  'events' => [
+    'handler' => $eventsUrl,
+    'ONCRMDEALADD' => $eventBindAdd,
+    'ONCRMDEALUPDATE' => $eventBindUpdate
+  ],
   'type_register_result' => $typeResult,
   'app_info' => $appInfo,
   'field_url' => $fieldUrl,
   'important' => [
     'visual_field_name' => $visualFieldName,
     'text_field_name' => $textFieldName,
-    'text_field_value_example' => 'Приволжский',
-    'text_field_description' => 'Это обычное строковое поле. Его можно использовать в фильтрах, роботах и бизнес-процессах.'
+    'text_field_value_example' => 'Приволжский'
   ]
-]);
+], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
