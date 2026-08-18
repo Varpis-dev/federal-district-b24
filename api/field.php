@@ -108,6 +108,8 @@ const managerEl = document.getElementById('manager');
 const placeEl = document.getElementById('place');
 const smallEl = document.getElementById('small');
 
+const OUTPUT_TEXT_FIELD = 'UF_CRM_FEDERAL_DISTRICT_TEXT';
+
 const DISTRICTS = {
   central: 'Центральный',
   northwest: 'Северо-Западный',
@@ -131,7 +133,6 @@ const DEFAULT_MANAGERS = {
 };
 
 const REGION_DISTRICT_EXACT = {
-  // Центральный
   'белгородская': 'central',
   'брянская': 'central',
   'владимирская': 'central',
@@ -151,7 +152,6 @@ const REGION_DISTRICT_EXACT = {
   'тульская': 'central',
   'ярославская': 'central',
 
-  // Северо-Западный
   'карелия': 'northwest',
   'коми': 'northwest',
   'архангельская': 'northwest',
@@ -166,7 +166,6 @@ const REGION_DISTRICT_EXACT = {
   'петербург': 'northwest',
   'спб': 'northwest',
 
-  // Южный
   'адыгея': 'south',
   'калмыкия': 'south',
   'крым': 'south',
@@ -176,7 +175,6 @@ const REGION_DISTRICT_EXACT = {
   'ростовская': 'south',
   'севастополь': 'south',
 
-  // Северо-Кавказский
   'дагестан': 'northCaucasus',
   'ингушетия': 'northCaucasus',
   'кабардино-балкарская': 'northCaucasus',
@@ -187,7 +185,6 @@ const REGION_DISTRICT_EXACT = {
   'чеченская': 'northCaucasus',
   'ставропольский': 'northCaucasus',
 
-  // Приволжский
   'башкортостан': 'volga',
   'башкирия': 'volga',
   'марий эл': 'volga',
@@ -204,7 +201,6 @@ const REGION_DISTRICT_EXACT = {
   'саратовская': 'volga',
   'ульяновская': 'volga',
 
-  // Уральский
   'курганская': 'ural',
   'свердловская': 'ural',
   'тюменская': 'ural',
@@ -214,7 +210,6 @@ const REGION_DISTRICT_EXACT = {
   'ямало-ненецкий': 'ural',
   'челябинская': 'ural',
 
-  // Сибирский
   'алтайский': 'siberian',
   'алтай': 'siberian',
   'тыва': 'siberian',
@@ -228,7 +223,6 @@ const REGION_DISTRICT_EXACT = {
   'омская': 'siberian',
   'томская': 'siberian',
 
-  // Дальневосточный
   'бурятия': 'farEast',
   'саха': 'farEast',
   'якутия': 'farEast',
@@ -244,7 +238,6 @@ const REGION_DISTRICT_EXACT = {
 };
 
 const REGION_DISTRICT_STEMS = {
-  // Центральный
   'белгород': 'central',
   'брянск': 'central',
   'владимир': 'central',
@@ -263,7 +256,6 @@ const REGION_DISTRICT_STEMS = {
   'тульск': 'central',
   'ярослав': 'central',
 
-  // Северо-Западный
   'карел': 'northwest',
   'коми': 'northwest',
   'архангел': 'northwest',
@@ -276,7 +268,6 @@ const REGION_DISTRICT_STEMS = {
   'псков': 'northwest',
   'петербург': 'northwest',
 
-  // Южный
   'адыге': 'south',
   'калмык': 'south',
   'крым': 'south',
@@ -286,7 +277,6 @@ const REGION_DISTRICT_STEMS = {
   'ростов': 'south',
   'севастопол': 'south',
 
-  // Северо-Кавказский
   'дагестан': 'northCaucasus',
   'ингуш': 'northCaucasus',
   'кабардино': 'northCaucasus',
@@ -298,7 +288,6 @@ const REGION_DISTRICT_STEMS = {
   'чечен': 'northCaucasus',
   'ставропол': 'northCaucasus',
 
-  // Приволжский
   'башкортостан': 'volga',
   'башкир': 'volga',
   'марий': 'volga',
@@ -315,7 +304,6 @@ const REGION_DISTRICT_STEMS = {
   'саратов': 'volga',
   'ульянов': 'volga',
 
-  // Уральский
   'курган': 'ural',
   'свердлов': 'ural',
   'тюмен': 'ural',
@@ -324,7 +312,6 @@ const REGION_DISTRICT_STEMS = {
   'ямало': 'ural',
   'челябин': 'ural',
 
-  // Сибирский
   'алтай': 'siberian',
   'тыва': 'siberian',
   'тува': 'siberian',
@@ -337,7 +324,6 @@ const REGION_DISTRICT_STEMS = {
   'омск': 'siberian',
   'томск': 'siberian',
 
-  // Дальневосточный
   'бурят': 'farEast',
   'саха': 'farEast',
   'якут': 'farEast',
@@ -353,7 +339,6 @@ const REGION_DISTRICT_STEMS = {
 };
 
 const CITY_DISTRICT = {
-  // Центральный
   'москва': 'central',
   'балашиха': 'central',
   'химки': 'central',
@@ -381,7 +366,6 @@ const CITY_DISTRICT = {
   'иваново': 'central',
   'кострома': 'central',
 
-  // Северо-Западный
   'санкт-петербург': 'northwest',
   'петербург': 'northwest',
   'калининград': 'northwest',
@@ -396,7 +380,6 @@ const CITY_DISTRICT = {
   'сыктывкар': 'northwest',
   'советск': 'northwest',
 
-  // Южный
   'краснодар': 'south',
   'сочи': 'south',
   'новороссийск': 'south',
@@ -415,7 +398,6 @@ const CITY_DISTRICT = {
   'севастополь': 'south',
   'ялта': 'south',
 
-  // Северо-Кавказский
   'махачкала': 'northCaucasus',
   'каспийск': 'northCaucasus',
   'дербент': 'northCaucasus',
@@ -431,7 +413,6 @@ const CITY_DISTRICT = {
   'назрань': 'northCaucasus',
   'черкесск': 'northCaucasus',
 
-  // Приволжский
   'нижний новгород': 'volga',
   'дзержинск': 'volga',
   'богородск': 'volga',
@@ -469,7 +450,6 @@ const CITY_DISTRICT = {
   'ижевск': 'volga',
   'сарапул': 'volga',
 
-  // Уральский
   'екатеринбург': 'ural',
   'нижний тагил': 'ural',
   'каменск-уральский': 'ural',
@@ -491,7 +471,6 @@ const CITY_DISTRICT = {
   'надым': 'ural',
   'салехард': 'ural',
 
-  // Сибирский
   'новосибирск': 'siberian',
   'бердск': 'siberian',
   'омск': 'siberian',
@@ -516,7 +495,6 @@ const CITY_DISTRICT = {
   'абакан': 'siberian',
   'кызыл': 'siberian',
 
-  // Дальневосточный
   'улан-удэ': 'farEast',
   'чита': 'farEast',
   'якутск': 'farEast',
@@ -737,6 +715,31 @@ function detectDistrict(city, region) {
   };
 }
 
+async function syncPlainDistrictField(entityId, deal, districtName) {
+  try {
+    if (!entityId) return;
+
+    const targetValue = districtName || '';
+    const currentValue = deal && typeof deal[OUTPUT_TEXT_FIELD] !== 'undefined'
+      ? String(deal[OUTPUT_TEXT_FIELD] || '')
+      : null;
+
+    if (currentValue !== null && currentValue === targetValue) {
+      return;
+    }
+
+    const fields = {};
+    fields[OUTPUT_TEXT_FIELD] = targetValue;
+
+    await bxCall('crm.deal.update', {
+      id: entityId,
+      fields
+    }, 15000);
+  } catch (e) {
+    console.log('Не удалось записать строковое поле федерального округа:', e);
+  }
+}
+
 function renderOk(districtKey, manager, city, region, source) {
   const districtName = DISTRICTS[districtKey] || 'Не определено';
 
@@ -754,8 +757,8 @@ function renderOk(districtKey, manager, city, region, source) {
     : city;
 
   smallEl.textContent = source === 'region'
-    ? 'Округ определён по области/региону'
-    : 'Округ определён по городу';
+    ? 'Округ определён по области/региону · строковое поле обновляется автоматически'
+    : 'Округ определён по городу · строковое поле обновляется автоматически';
 }
 
 function renderNeedRegion(city) {
@@ -773,7 +776,7 @@ function renderUnknown(city, region) {
   mainEl.textContent = 'Округ не определён';
   managerEl.style.display = 'none';
   placeEl.textContent = region ? city + ', ' + region : city;
-  smallEl.textContent = 'Проверьте заполнение города и области в сделке.';
+  smallEl.textContent = 'Проверьте заполнение города и области в сделке. Строковое поле будет очищено.';
 }
 
 function renderError(title, message) {
@@ -823,23 +826,30 @@ BX24.init(async function() {
     const region = regionField ? parseFieldValue(rawRegion, regionField, fieldsMeta) : '';
 
     if (!city) {
-      renderError('Город не заполнен', 'Заполните город в карточке сделки.');
+      await syncPlainDistrictField(entityId, deal, '');
+      renderError('Город не заполнен', 'Заполните город в карточке сделки. Строковое поле федерального округа очищено.');
       return;
     }
 
     const result = detectDistrict(city, region);
 
     if (result.status === 'need_region') {
+      await syncPlainDistrictField(entityId, deal, '');
       renderNeedRegion(city);
       return;
     }
 
     if (result.status === 'unknown' || !result.districtKey) {
+      await syncPlainDistrictField(entityId, deal, '');
       renderUnknown(city, region);
       return;
     }
 
+    const districtName = DISTRICTS[result.districtKey] || '';
     const manager = getManagerByDistrict(appOptions, result.districtKey);
+
+    await syncPlainDistrictField(entityId, deal, districtName);
+
     renderOk(result.districtKey, manager, city, region, result.source);
 
     if (window.BX24 && BX24.fitWindow) {
