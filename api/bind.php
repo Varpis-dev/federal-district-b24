@@ -54,10 +54,25 @@ function callBitrix($method, $params, $auth) {
   return $decoded;
 }
 
+function getExistingDealField($fieldName, $auth) {
+  $result = callBitrix('crm.deal.userfield.list', [
+    'filter' => [
+      'FIELD_NAME' => $fieldName
+    ]
+  ], $auth);
+
+  if (!empty($result['result']) && is_array($result['result'])) {
+    return $result['result'];
+  }
+
+  return [];
+}
+
 $input = json_decode(file_get_contents('php://input'), true);
 
 if (!is_array($input)) {
   jsonResponse([
+    'success' => false,
     'error' => 'BAD_INPUT',
     'message' => 'Некорректный JSON'
   ]);
@@ -67,6 +82,7 @@ $auth = $input['auth'] ?? null;
 
 if (!$auth) {
   jsonResponse([
+    'success' => false,
     'error' => 'NO_AUTH',
     'message' => 'Не передана авторизация'
   ]);
@@ -75,10 +91,13 @@ if (!$auth) {
 $baseUrl = getBaseUrl();
 $fieldUrl = $baseUrl . '/field';
 
-$userTypeId = 'fed_district_manager';
+$visualUserTypeId = 'fed_district_manager';
+
+$visualFieldName = 'UF_CRM_FEDERAL_DISTRICT_MANAGER';
+$textFieldName = 'UF_CRM_FEDERAL_DISTRICT_TEXT';
 
 $typeResult = callBitrix('userfieldtype.add', [
-  'USER_TYPE_ID' => $userTypeId,
+  'USER_TYPE_ID' => $visualUserTypeId,
   'HANDLER' => $fieldUrl,
   'TITLE' => 'Федеральный округ сделки',
   'DESCRIPTION' => 'Определение федерального округа и ответственного менеджера по городу и области сделки',
@@ -88,6 +107,7 @@ $typeResult = callBitrix('userfieldtype.add', [
 ], $auth);
 
 $appInfo = callBitrix('app.info', [], $auth);
+
 $appId = null;
 
 if (isset($appInfo['result']['ID'])) {
@@ -99,72 +119,88 @@ if (isset($appInfo['result']['ID'])) {
 $possibleUserTypeIds = [];
 
 if ($appId) {
-  $possibleUserTypeIds[] = 'rest_' . $appId . '_' . $userTypeId;
+  $possibleUserTypeIds[] = 'rest_' . $appId . '_' . $visualUserTypeId;
 }
 
-$possibleUserTypeIds[] = $userTypeId;
+$possibleUserTypeIds[] = $visualUserTypeId;
 
-$existingFields = callBitrix('crm.deal.userfield.list', [
-  'filter' => [
-    'FIELD_NAME' => 'UF_CRM_FEDERAL_DISTRICT_MANAGER'
-  ]
-], $auth);
+$visualExisting = getExistingDealField($visualFieldName, $auth);
+$textExisting = getExistingDealField($textFieldName, $auth);
 
-if (!empty($existingFields['result']) && is_array($existingFields['result'])) {
-  jsonResponse([
-    'success' => true,
-    'message' => 'Поле уже существует. Повторно создавать не нужно.',
-    'field' => $existingFields['result'],
-    'type_register_result' => $typeResult,
-    'app_info' => $appInfo,
-    'field_url' => $fieldUrl
-  ]);
-}
+$visualResult = [
+  'already_exists' => !empty($visualExisting),
+  'field' => $visualExisting,
+  'create_result' => null,
+  'used_user_type_id' => null
+];
 
-$lastAddResult = null;
+$textResult = [
+  'already_exists' => !empty($textExisting),
+  'field' => $textExisting,
+  'create_result' => null
+];
 
-foreach ($possibleUserTypeIds as $actualUserTypeId) {
-  $addResult = callBitrix('crm.deal.userfield.add', [
-    'fields' => [
-      'FIELD_NAME' => 'UF_CRM_FEDERAL_DISTRICT_MANAGER',
-      'EDIT_FORM_LABEL' => 'Федеральный округ',
-      'LIST_COLUMN_LABEL' => 'Федеральный округ',
-      'LIST_FILTER_LABEL' => 'Федеральный округ',
-      'ERROR_MESSAGE' => '',
-      'HELP_MESSAGE' => 'Федеральный округ и менеджер по городу и области сделки',
-      'USER_TYPE_ID' => $actualUserTypeId,
-      'XML_ID' => 'FEDERAL_DISTRICT_MANAGER',
-      'MULTIPLE' => 'N',
-      'MANDATORY' => 'N',
-      'SHOW_FILTER' => 'N',
-      'SORT' => 100
-    ]
-  ], $auth);
+if (empty($visualExisting)) {
+  foreach ($possibleUserTypeIds as $actualUserTypeId) {
+    $addVisualResult = callBitrix('crm.deal.userfield.add', [
+      'fields' => [
+        'FIELD_NAME' => $visualFieldName,
+        'EDIT_FORM_LABEL' => 'Федеральный округ',
+        'LIST_COLUMN_LABEL' => 'Федеральный округ',
+        'LIST_FILTER_LABEL' => 'Федеральный округ',
+        'ERROR_MESSAGE' => '',
+        'HELP_MESSAGE' => 'Федеральный округ и менеджер по городу и области сделки',
+        'USER_TYPE_ID' => $actualUserTypeId,
+        'XML_ID' => 'FEDERAL_DISTRICT_MANAGER',
+        'MULTIPLE' => 'N',
+        'MANDATORY' => 'N',
+        'SHOW_FILTER' => 'N',
+        'SORT' => 100
+      ]
+    ], $auth);
 
-  $lastAddResult = [
-    'tried_user_type_id' => $actualUserTypeId,
-    'result' => $addResult
-  ];
+    $visualResult['create_result'] = $addVisualResult;
+    $visualResult['used_user_type_id'] = $actualUserTypeId;
 
-  if (isset($addResult['result']) && !isset($addResult['error'])) {
-    jsonResponse([
-      'success' => true,
-      'message' => 'Поле создано успешно. Теперь добавьте его в карточку сделки.',
-      'field_add_result' => $addResult,
-      'type_register_result' => $typeResult,
-      'app_info' => $appInfo,
-      'used_user_type_id' => $actualUserTypeId,
-      'field_url' => $fieldUrl
-    ]);
+    if (isset($addVisualResult['result']) && !isset($addVisualResult['error'])) {
+      break;
+    }
   }
 }
 
+if (empty($textExisting)) {
+  $addTextResult = callBitrix('crm.deal.userfield.add', [
+    'fields' => [
+      'FIELD_NAME' => $textFieldName,
+      'EDIT_FORM_LABEL' => 'Федеральный округ (строка)',
+      'LIST_COLUMN_LABEL' => 'Федеральный округ (строка)',
+      'LIST_FILTER_LABEL' => 'Федеральный округ (строка)',
+      'ERROR_MESSAGE' => '',
+      'HELP_MESSAGE' => 'Обычное строковое поле для фильтров, роботов и бизнес-процессов',
+      'USER_TYPE_ID' => 'string',
+      'XML_ID' => 'FEDERAL_DISTRICT_TEXT',
+      'MULTIPLE' => 'N',
+      'MANDATORY' => 'N',
+      'SHOW_FILTER' => 'Y',
+      'SORT' => 101
+    ]
+  ], $auth);
+
+  $textResult['create_result'] = $addTextResult;
+}
+
 jsonResponse([
-  'success' => false,
-  'message' => 'Не удалось создать поле.',
-  'last_add_result' => $lastAddResult,
+  'success' => true,
+  'message' => 'Проверка и создание полей завершены.',
+  'visual_field' => $visualResult,
+  'text_field' => $textResult,
   'type_register_result' => $typeResult,
   'app_info' => $appInfo,
-  'possible_user_type_ids' => $possibleUserTypeIds,
-  'field_url' => $fieldUrl
+  'field_url' => $fieldUrl,
+  'important' => [
+    'visual_field_name' => $visualFieldName,
+    'text_field_name' => $textFieldName,
+    'text_field_value_example' => 'Приволжский',
+    'text_field_description' => 'Это обычное строковое поле. Его можно использовать в фильтрах, роботах и бизнес-процессах.'
+  ]
 ]);
