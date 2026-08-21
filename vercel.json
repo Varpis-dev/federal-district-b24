@@ -12,6 +12,7 @@
     { "src": "/field", "dest": "/api/field.php" },
     { "src": "/bind", "dest": "/api/bind.php" },
     { "src": "/events", "dest": "/api/events.php" },
+    { "src": "/calc", "dest": "/api/calc.php" },
     { "src": "/recalc-leads", "dest": "/api/recalc-leads.php" },
     { "src": "/contact", "dest": "/api/contact.php" },
     { "src": "/license", "dest": "/api/license.php" },
