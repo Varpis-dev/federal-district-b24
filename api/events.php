@@ -2,19 +2,14 @@
 
 require_once __DIR__ . '/common.php';
 
-/*
- * Bitrix24 события обычно приходят
- * как application/x-www-form-urlencoded.
- *
- * Но на всякий случай поддерживаем JSON.
- */
-
-$rawJson =
-    file_get_contents('php://input');
+$raw =
+    file_get_contents(
+        'php://input'
+    );
 
 $json =
     json_decode(
-        $rawJson,
+        $raw,
         true
     );
 
@@ -44,12 +39,7 @@ $event =
         )
     );
 
-/*
- * ID сущности.
- * В событиях CRM Bitrix24 передаёт его
- * в data[FIELDS][ID].
- */
-$entityId =
+$leadId =
     $input['data']['FIELDS']['ID'] ??
     $input['DATA']['FIELDS']['ID'] ??
     $input['data']['fields']['ID'] ??
@@ -68,78 +58,35 @@ if (
     ]);
 }
 
-if (!$entityId) {
+if (
+    $event !== 'ONCRMLEADADD' &&
+    $event !== 'ONCRMLEADUPDATE'
+) {
+    jsonResponse([
+        'success' => true,
+        'handled' => false,
+        'ignored_event' => $event
+    ]);
+}
+
+if (!$leadId) {
     jsonResponse([
         'success' => false,
-        'reason' => 'no_entity_id',
+        'reason' => 'no_lead_id',
         'event' => $event
     ]);
 }
 
-/*
- * ============================================================
- * ЛИД СОЗДАН / ЛИД ИЗМЕНЁН
- * ============================================================
- */
-
-if (
-    $event === 'ONCRMLEADADD' ||
-    $event === 'ONCRMLEADUPDATE'
-) {
-
-    $result =
-        syncLeadDistrict(
-            $entityId,
-            $auth
-        );
-
-    jsonResponse([
-        'success' => true,
-        'handled' => 'lead',
-        'event' => $event,
-        'lead_id' => $entityId,
-        'result' => $result
-    ]);
-}
-
-/*
- * ============================================================
- * СДЕЛКА СОЗДАНА
- * ============================================================
- */
-
-if (
-    $event === 'ONCRMDEALADD'
-) {
-
-    $result =
-        transferLeadDistrictToDeal(
-            $entityId,
-            $auth
-        );
-
-    jsonResponse([
-        'success' => true,
-        'handled' => 'deal_add',
-        'event' => $event,
-        'deal_id' => $entityId,
-        'result' => $result
-    ]);
-}
-
-/*
- * ============================================================
- * ВСЁ ОСТАЛЬНОЕ ИГНОРИРУЕМ
- *
- * В частности, если старая подписка
- * ONCRMDEALUPDATE вдруг осталась —
- * она ничего не сделает.
- * ============================================================
- */
+$result =
+    syncLeadDistrict(
+        $leadId,
+        $auth
+    );
 
 jsonResponse([
     'success' => true,
-    'handled' => false,
-    'ignored_event' => $event,
-    'entity_id' => $entityId
+    'handled' => true,
+    'event' => $event,
+    'lead_id' => $leadId,
+    'result' => $result
 ]);
