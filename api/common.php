@@ -5,22 +5,22 @@ const DEAL_FED_FIELD = 'UF_CRM_FEDERAL_DISTRICT_TEXT';
 
 function jsonResponse($data) {
     header('Content-Type: application/json; charset=utf-8');
+
     echo json_encode(
         $data,
         JSON_UNESCAPED_UNICODE |
         JSON_PRETTY_PRINT |
         JSON_INVALID_UTF8_SUBSTITUTE
     );
+
     exit;
 }
 
 function getBaseUrl() {
-    $host = $_SERVER['HTTP_HOST'] ?? '';
-    return 'https://' . $host;
+    return 'https://' . ($_SERVER['HTTP_HOST'] ?? '');
 }
 
 function callBitrix($method, $params, $auth) {
-
     if (
         empty($auth['domain']) ||
         empty($auth['access_token'])
@@ -44,24 +44,27 @@ function callBitrix($method, $params, $auth) {
         $method .
         '.json';
 
-    $params['auth'] = $auth['access_token'];
+    $params['auth'] =
+        $auth['access_token'];
 
     $context = stream_context_create([
         'http' => [
             'method' => 'POST',
             'header' =>
                 "Content-Type: application/x-www-form-urlencoded\r\n",
-            'content' => http_build_query($params),
+            'content' =>
+                http_build_query($params),
             'timeout' => 25,
             'ignore_errors' => true
         ]
     ]);
 
-    $raw = @file_get_contents(
-        $url,
-        false,
-        $context
-    );
+    $raw =
+        @file_get_contents(
+            $url,
+            false,
+            $context
+        );
 
     if ($raw === false) {
         return [
@@ -72,17 +75,21 @@ function callBitrix($method, $params, $auth) {
         ];
     }
 
-    $decoded = json_decode(
-        $raw,
-        true
-    );
+    $decoded =
+        json_decode(
+            $raw,
+            true
+        );
 
     if (!is_array($decoded)) {
         return [
             'error' => 'BAD_JSON',
-            'json_error' => json_last_error_msg(),
-            'raw_length' => strlen($raw),
-            'raw_start' => substr($raw, 0, 1000)
+            'json_error' =>
+                json_last_error_msg(),
+            'raw_length' =>
+                strlen($raw),
+            'raw_start' =>
+                substr($raw, 0, 1500)
         ];
     }
 
@@ -90,24 +97,25 @@ function callBitrix($method, $params, $auth) {
 }
 
 function normalizeAuth($input) {
-
     $auth = [];
 
     if (
         isset($input['auth']) &&
         is_array($input['auth'])
     ) {
-        $auth = $input['auth'];
+        $auth =
+            $input['auth'];
     }
 
     if (
         isset($input['AUTH']) &&
         is_array($input['AUTH'])
     ) {
-        $auth = array_merge(
-            $auth,
-            $input['AUTH']
-        );
+        $auth =
+            array_merge(
+                $auth,
+                $input['AUTH']
+            );
     }
 
     if (empty($auth['access_token'])) {
@@ -116,15 +124,25 @@ function normalizeAuth($input) {
             $auth['access_token'] =
                 $input['AUTH_ID'];
 
-        } elseif (!empty($input['auth']['AUTH_ID'])) {
+        } elseif (
+            !empty(
+                $input['auth']['AUTH_ID']
+            )
+        ) {
             $auth['access_token'] =
                 $input['auth']['AUTH_ID'];
 
-        } elseif (!empty($input['AUTH']['ACCESS_TOKEN'])) {
+        } elseif (
+            !empty(
+                $input['AUTH']['ACCESS_TOKEN']
+            )
+        ) {
             $auth['access_token'] =
                 $input['AUTH']['ACCESS_TOKEN'];
 
-        } elseif (!empty($input['access_token'])) {
+        } elseif (
+            !empty($input['access_token'])
+        ) {
             $auth['access_token'] =
                 $input['access_token'];
         }
@@ -140,15 +158,27 @@ function normalizeAuth($input) {
             $auth['domain'] =
                 $input['domain'];
 
-        } elseif (!empty($input['auth']['domain'])) {
-            $auth['domain'] =
-                $input['auth']['domain'];
-
-        } elseif (!empty($input['auth']['DOMAIN'])) {
+        } elseif (
+            !empty(
+                $input['auth']['DOMAIN']
+            )
+        ) {
             $auth['domain'] =
                 $input['auth']['DOMAIN'];
 
-        } elseif (!empty($input['AUTH']['DOMAIN'])) {
+        } elseif (
+            !empty(
+                $input['auth']['domain']
+            )
+        ) {
+            $auth['domain'] =
+                $input['auth']['domain'];
+
+        } elseif (
+            !empty(
+                $input['AUTH']['DOMAIN']
+            )
+        ) {
             $auth['domain'] =
                 $input['AUTH']['DOMAIN'];
         }
@@ -158,97 +188,123 @@ function normalizeAuth($input) {
 }
 
 function normalizeText($value) {
+    $value =
+        mb_strtolower(
+            (string)$value,
+            'UTF-8'
+        );
 
-    $value = mb_strtolower(
-        (string)$value,
-        'UTF-8'
-    );
+    $value =
+        str_replace(
+            'ё',
+            'е',
+            $value
+        );
 
-    $value = str_replace(
-        'ё',
-        'е',
-        $value
-    );
-
-    $value = preg_replace(
-        '/[()"«»]/u',
-        '',
-        $value
-    );
-
-    $value = preg_replace(
-        '/(^|\s)г\.(?=\s|$)/iu',
-        ' ',
-        $value
-    );
+    $value =
+        preg_replace(
+            '/[()"«»]/u',
+            '',
+            $value
+        );
 
     /*
-     * ВАЖНО:
-     * слово "город" удаляем только как отдельное слово.
-     * Поэтому "Нижегородская" НЕ ломается.
+     * Удаляем служебные слова
+     * ТОЛЬКО как отдельные слова.
+     *
+     * Нижегородская при этом
+     * не превращается в "нижеская".
      */
-    $value = preg_replace(
-        '/(^|\s)(область|обл\.?|республика|респ\.?|край|ао|автономный округ|город)(?=\s|$)/iu',
-        ' ',
-        $value
-    );
+    $value =
+        preg_replace(
+            '/(^|\s)г\.(?=\s|$)/iu',
+            ' ',
+            $value
+        );
 
-    $value = preg_replace(
-        '/\s+/u',
-        ' ',
-        $value
-    );
+    $value =
+        preg_replace(
+            '/(^|\s)(область|обл\.?|республика|респ\.?|край|ао|автономный округ|автономная область|город)(?=\s|$)/iu',
+            ' ',
+            $value
+        );
+
+    $value =
+        preg_replace(
+            '/\s+/u',
+            ' ',
+            $value
+        );
 
     return trim($value);
 }
 
 function normalizeCity($value) {
+    $value =
+        mb_strtolower(
+            (string)$value,
+            'UTF-8'
+        );
 
-    $value = mb_strtolower(
-        (string)$value,
-        'UTF-8'
-    );
+    $value =
+        str_replace(
+            'ё',
+            'е',
+            $value
+        );
 
-    $value = str_replace(
-        'ё',
-        'е',
-        $value
-    );
+    $value =
+        preg_replace(
+            '/[()"«»]/u',
+            '',
+            $value
+        );
 
-    $value = preg_replace(
-        '/[()"«»]/u',
-        '',
-        $value
-    );
-
-    $value = preg_replace(
-        '/\s+/u',
-        ' ',
-        $value
-    );
+    $value =
+        preg_replace(
+            '/\s+/u',
+            ' ',
+            $value
+        );
 
     return trim($value);
 }
 
 function getDistrictNameMap() {
-
     return [
-        'central' => 'Центральный',
-        'northwest' => 'Северо-Западный',
-        'south' => 'Южный',
-        'northCaucasus' => 'Северо-Кавказский',
-        'volga' => 'Приволжский',
-        'ural' => 'Уральский',
-        'siberian' => 'Сибирский',
-        'farEast' => 'Дальневосточный'
+        'central' =>
+            'Центральный',
+
+        'northwest' =>
+            'Северо-Западный',
+
+        'south' =>
+            'Южный',
+
+        'northCaucasus' =>
+            'Северо-Кавказский',
+
+        'volga' =>
+            'Приволжский',
+
+        'ural' =>
+            'Уральский',
+
+        'siberian' =>
+            'Сибирский',
+
+        'farEast' =>
+            'Дальневосточный'
     ];
 }
 
 function getRegionDistrictExact() {
-
     return [
 
-        // ЦФО
+        // =========================
+        // ЦЕНТРАЛЬНЫЙ
+        // =========================
+
         'белгородская' => 'central',
         'брянская' => 'central',
         'владимирская' => 'central',
@@ -268,7 +324,10 @@ function getRegionDistrictExact() {
         'тульская' => 'central',
         'ярославская' => 'central',
 
-        // СЗФО
+        // =========================
+        // СЕВЕРО-ЗАПАДНЫЙ
+        // =========================
+
         'карелия' => 'northwest',
         'коми' => 'northwest',
         'архангельская' => 'northwest',
@@ -283,7 +342,10 @@ function getRegionDistrictExact() {
         'петербург' => 'northwest',
         'спб' => 'northwest',
 
-        // ЮФО
+        // =========================
+        // ЮЖНЫЙ
+        // =========================
+
         'адыгея' => 'south',
         'калмыкия' => 'south',
         'крым' => 'south',
@@ -293,7 +355,10 @@ function getRegionDistrictExact() {
         'ростовская' => 'south',
         'севастополь' => 'south',
 
-        // СКФО
+        // =========================
+        // СЕВЕРО-КАВКАЗСКИЙ
+        // =========================
+
         'дагестан' => 'northCaucasus',
         'ингушетия' => 'northCaucasus',
         'кабардино-балкарская' => 'northCaucasus',
@@ -304,7 +369,10 @@ function getRegionDistrictExact() {
         'чеченская' => 'northCaucasus',
         'ставропольский' => 'northCaucasus',
 
-        // ПФО
+        // =========================
+        // ПРИВОЛЖСКИЙ
+        // =========================
+
         'башкортостан' => 'volga',
         'башкирия' => 'volga',
         'марий эл' => 'volga',
@@ -321,7 +389,10 @@ function getRegionDistrictExact() {
         'саратовская' => 'volga',
         'ульяновская' => 'volga',
 
-        // УрФО
+        // =========================
+        // УРАЛЬСКИЙ
+        // =========================
+
         'курганская' => 'ural',
         'свердловская' => 'ural',
         'тюменская' => 'ural',
@@ -331,7 +402,10 @@ function getRegionDistrictExact() {
         'ямало-ненецкий' => 'ural',
         'челябинская' => 'ural',
 
-        // СФО
+        // =========================
+        // СИБИРСКИЙ
+        // =========================
+
         'алтайский' => 'siberian',
         'алтай' => 'siberian',
         'тыва' => 'siberian',
@@ -345,7 +419,10 @@ function getRegionDistrictExact() {
         'омская' => 'siberian',
         'томская' => 'siberian',
 
-        // ДФО
+        // =========================
+        // ДАЛЬНЕВОСТОЧНЫЙ
+        // =========================
+
         'бурятия' => 'farEast',
         'саха' => 'farEast',
         'якутия' => 'farEast',
@@ -362,7 +439,6 @@ function getRegionDistrictExact() {
 }
 
 function getRegionDistrictStems() {
-
     return [
 
         // ЦФО
@@ -475,17 +551,18 @@ function getRegionDistrictStems() {
 }
 
 function getCityDistrictMap() {
-
     return [
 
+        // =========================
         // ЦФО
+        // =========================
+
         'москва' => 'central',
         'балашиха' => 'central',
         'химки' => 'central',
         'мытищи' => 'central',
         'подольск' => 'central',
         'королев' => 'central',
-        'королёв' => 'central',
         'люберцы' => 'central',
         'красногорск' => 'central',
         'одинцово' => 'central',
@@ -495,7 +572,6 @@ function getCityDistrictMap() {
         'белгород' => 'central',
         'курск' => 'central',
         'орел' => 'central',
-        'орёл' => 'central',
         'тула' => 'central',
         'рязань' => 'central',
         'калуга' => 'central',
@@ -507,7 +583,10 @@ function getCityDistrictMap() {
         'иваново' => 'central',
         'кострома' => 'central',
 
+        // =========================
         // СЗФО
+        // =========================
+
         'санкт-петербург' => 'northwest',
         'петербург' => 'northwest',
         'калининград' => 'northwest',
@@ -521,7 +600,10 @@ function getCityDistrictMap() {
         'петрозаводск' => 'northwest',
         'сыктывкар' => 'northwest',
 
+        // =========================
         // ЮФО
+        // =========================
+
         'краснодар' => 'south',
         'сочи' => 'south',
         'новороссийск' => 'south',
@@ -540,7 +622,10 @@ function getCityDistrictMap() {
         'севастополь' => 'south',
         'ялта' => 'south',
 
+        // =========================
         // СКФО
+        // =========================
+
         'махачкала' => 'northCaucasus',
         'каспийск' => 'northCaucasus',
         'дербент' => 'northCaucasus',
@@ -555,7 +640,10 @@ function getCityDistrictMap() {
         'назрань' => 'northCaucasus',
         'черкесск' => 'northCaucasus',
 
+        // =========================
         // ПФО
+        // =========================
+
         'нижний новгород' => 'volga',
         'дзержинск' => 'volga',
         'богородск' => 'volga',
@@ -593,7 +681,10 @@ function getCityDistrictMap() {
         'ижевск' => 'volga',
         'сарапул' => 'volga',
 
-        // УрФО
+        // =========================
+        // УРФО
+        // =========================
+
         'екатеринбург' => 'ural',
         'нижний тагил' => 'ural',
         'каменск-уральский' => 'ural',
@@ -615,7 +706,10 @@ function getCityDistrictMap() {
         'надым' => 'ural',
         'салехард' => 'ural',
 
+        // =========================
         // СФО
+        // =========================
+
         'новосибирск' => 'siberian',
         'бердск' => 'siberian',
         'омск' => 'siberian',
@@ -631,7 +725,6 @@ function getCityDistrictMap() {
         'новокузнецк' => 'siberian',
         'прокопьевск' => 'siberian',
         'киселевск' => 'siberian',
-        'киселёвск' => 'siberian',
         'междуреченск' => 'siberian',
         'барнаул' => 'siberian',
         'бийск' => 'siberian',
@@ -640,14 +733,16 @@ function getCityDistrictMap() {
         'абакан' => 'siberian',
         'кызыл' => 'siberian',
 
+        // =========================
         // ДФО
+        // =========================
+
         'улан-удэ' => 'farEast',
         'чита' => 'farEast',
         'якутск' => 'farEast',
         'благовещенск' => 'farEast',
         'владивосток' => 'farEast',
         'артем' => 'farEast',
-        'артём' => 'farEast',
         'уссурийск' => 'farEast',
         'находка' => 'farEast',
         'хабаровск' => 'farEast',
@@ -659,7 +754,6 @@ function getCityDistrictMap() {
 }
 
 function getAmbiguousCities() {
-
     return [
         'советск',
         'троицк',
@@ -680,24 +774,29 @@ function getAmbiguousCities() {
 }
 
 function getDistrictByRegion($region) {
-
-    $normalized = normalizeText($region);
+    $normalized =
+        normalizeText($region);
 
     if (!$normalized) {
         return null;
     }
 
-    $exact = getRegionDistrictExact();
+    $exact =
+        getRegionDistrictExact();
 
-    if (isset($exact[$normalized])) {
-        return $exact[$normalized];
+    if (
+        isset(
+            $exact[$normalized]
+        )
+    ) {
+        return
+            $exact[$normalized];
     }
 
     foreach (
         getRegionDistrictStems()
         as $stem => $district
     ) {
-
         if (
             mb_strpos(
                 $normalized,
@@ -714,8 +813,8 @@ function getDistrictByRegion($region) {
 }
 
 function getDistrictByCity($city) {
-
-    $normalized = normalizeCity($city);
+    $normalized =
+        normalizeCity($city);
 
     if (!$normalized) {
         return null;
@@ -733,15 +832,27 @@ function getDistrictByCity($city) {
         ];
     }
 
-    $map = getCityDistrictMap();
+    $map =
+        getCityDistrictMap();
 
-    return $map[$normalized] ?? null;
+    return
+        $map[$normalized] ??
+        null;
 }
 
-function detectDistrict($city, $region) {
+function detectDistrict(
+    $city,
+    $region
+) {
+    /*
+     * ГЛАВНЫЙ ПРИОРИТЕТ:
+     * ОБЛАСТЬ / РЕГИОН
+     */
 
-    // ОБЛАСТЬ ВСЕГДА ИМЕЕТ ПРИОРИТЕТ
-    $byRegion = getDistrictByRegion($region);
+    $byRegion =
+        getDistrictByRegion(
+            $region
+        );
 
     if ($byRegion) {
         return [
@@ -751,13 +862,21 @@ function detectDistrict($city, $region) {
         ];
     }
 
-    // Если области нет или она не распознана —
-    // пробуем город.
-    $byCity = getDistrictByCity($city);
+    /*
+     * Если область пустая либо
+     * не распознана — пробуем город.
+     */
+
+    $byCity =
+        getDistrictByCity(
+            $city
+        );
 
     if (
         is_array($byCity) &&
-        !empty($byCity['needRegion'])
+        !empty(
+            $byCity['needRegion']
+        )
     ) {
         return [
             'status' => 'need_region',
@@ -781,46 +900,48 @@ function detectDistrict($city, $region) {
     ];
 }
 
-function getDistrictNameByKey($key) {
-
-    $map = getDistrictNameMap();
-
-    return $map[$key] ?? '';
-}
-
-function calcDistrictName($city, $region) {
-
-    $result = detectDistrict(
-        $city,
-        $region
-    );
+function calcDistrictName(
+    $city,
+    $region
+) {
+    $result =
+        detectDistrict(
+            $city,
+            $region
+        );
 
     if (
         ($result['status'] ?? '') !== 'ok' ||
-        empty($result['districtKey'])
+        empty(
+            $result['districtKey']
+        )
     ) {
         return [
             'status' =>
-                $result['status'] ?? 'unknown',
+                $result['status'] ??
+                'unknown',
 
             'districtKey' => null,
             'districtName' => '',
 
             'source' =>
-                $result['source'] ?? null
+                $result['source'] ??
+                null
         ];
     }
 
+    $names =
+        getDistrictNameMap();
+
+    $key =
+        $result['districtKey'];
+
     return [
         'status' => 'ok',
-
-        'districtKey' =>
-            $result['districtKey'],
+        'districtKey' => $key,
 
         'districtName' =>
-            getDistrictNameByKey(
-                $result['districtKey']
-            ),
+            $names[$key] ?? '',
 
         'source' =>
             $result['source']
@@ -832,7 +953,6 @@ function getUserFieldMeta(
     $fieldCode,
     $auth
 ) {
-
     if (!$fieldCode) {
         return null;
     }
@@ -851,25 +971,26 @@ function getUserFieldMeta(
             ? 'crm.lead.userfield.list'
             : 'crm.deal.userfield.list';
 
-    $result = callBitrix(
-        $method,
-        [
-            'filter' => [
-                'FIELD_NAME' => $fieldCode
-            ]
-        ],
-        $auth
-    );
+    $res =
+        callBitrix(
+            $method,
+            [
+                'filter' => [
+                    'FIELD_NAME' =>
+                        $fieldCode
+                ]
+            ],
+            $auth
+        );
 
-    if (!empty($result['error'])) {
+    if (!empty($res['error'])) {
         return null;
     }
 
     foreach (
-        $result['result'] ?? []
+        $res['result'] ?? []
         as $item
     ) {
-
         if (
             ($item['FIELD_NAME'] ?? '') ===
             $fieldCode
@@ -881,8 +1002,9 @@ function getUserFieldMeta(
     return null;
 }
 
-function getEnumItemsFromMeta($meta) {
-
+function getEnumItemsFromMeta(
+    $meta
+) {
     if (
         !$meta ||
         !is_array($meta)
@@ -901,12 +1023,12 @@ function getEnumItemsFromMeta($meta) {
         ]
         as $key
     ) {
-
         if (
             !empty($meta[$key]) &&
             is_array($meta[$key])
         ) {
-            return $meta[$key];
+            return
+                $meta[$key];
         }
     }
 
@@ -917,7 +1039,6 @@ function parseFieldValue(
     $rawValue,
     $fieldMeta = null
 ) {
-
     if (is_array($rawValue)) {
 
         if (
@@ -963,7 +1084,9 @@ function parseFieldValue(
     }
 
     $value =
-        (string)($rawValue ?? '');
+        (string)(
+            $rawValue ?? ''
+        );
 
     $items =
         getEnumItemsFromMeta(
@@ -976,26 +1099,30 @@ function parseFieldValue(
             continue;
         }
 
-        $id = (string)(
-            $item['ID'] ??
-            $item['id'] ??
-            $item['VALUE_ID'] ??
-            ''
-        );
+        $id =
+            (string)(
+                $item['ID'] ??
+                $item['id'] ??
+                $item['VALUE_ID'] ??
+                $item['valueId'] ??
+                ''
+            );
 
-        $text = (string)(
-            $item['VALUE'] ??
-            $item['value'] ??
-            $item['NAME'] ??
-            $item['name'] ??
-            ''
-        );
+        $text =
+            (string)(
+                $item['VALUE'] ??
+                $item['value'] ??
+                $item['NAME'] ??
+                $item['name'] ??
+                ''
+            );
 
         if (
             $id === $value ||
             $text === $value
         ) {
-            return $text ?: $value;
+            return
+                $text ?: $value;
         }
     }
 
@@ -1003,27 +1130,29 @@ function parseFieldValue(
 }
 
 /*
- * ============================================================
- * ЛИД
- * ============================================================
+ * =====================================================
+ * РАСЧЁТ ФО ДЛЯ ЛИДА
+ * =====================================================
  */
 
 function calculateLeadDistrict(
     $lead,
-    $appOptions,
+    $options,
     $auth
 ) {
-
     $cityField =
-        $appOptions['leadCityField'] ?? '';
+        $options['leadCityField'] ??
+        '';
 
     $regionField =
-        $appOptions['leadRegionField'] ?? '';
+        $options['leadRegionField'] ??
+        '';
 
     if (!$cityField) {
         return [
             'success' => false,
-            'reason' => 'no_lead_city_field'
+            'reason' =>
+                'no_lead_city_field'
         ];
     }
 
@@ -1075,23 +1204,35 @@ function calculateLeadDistrict(
 
     return [
         'success' => true,
-        'status' => $calc['status'],
+        'status' =>
+            $calc['status'],
+
         'city' => $city,
         'region' => $region,
+
         'districtKey' =>
             $calc['districtKey'],
+
         'districtName' =>
             $calc['districtName'],
+
         'source' =>
             $calc['source']
     ];
 }
 
+/*
+ * =====================================================
+ * ЗАПИСЬ СТРОКОВОГО ФО В ЛИД
+ *
+ * СДЕЛКИ ЗДЕСЬ НЕТ ВООБЩЕ.
+ * =====================================================
+ */
+
 function syncLeadDistrict(
     $leadId,
     $auth
 ) {
-
     $optionsRes =
         callBitrix(
             'app.option.get',
@@ -1099,7 +1240,11 @@ function syncLeadDistrict(
             $auth
         );
 
-    if (!empty($optionsRes['error'])) {
+    if (
+        !empty(
+            $optionsRes['error']
+        )
+    ) {
         return [
             'success' => false,
             'reason' => 'options_error',
@@ -1107,8 +1252,9 @@ function syncLeadDistrict(
         ];
     }
 
-    $appOptions =
-        $optionsRes['result'] ?? [];
+    $options =
+        $optionsRes['result'] ??
+        [];
 
     $leadRes =
         callBitrix(
@@ -1119,26 +1265,34 @@ function syncLeadDistrict(
             $auth
         );
 
-    if (!empty($leadRes['error'])) {
+    if (
+        !empty(
+            $leadRes['error']
+        )
+    ) {
         return [
             'success' => false,
-            'reason' => 'lead_get_error',
+            'reason' =>
+                'lead_get_error',
             'error' => $leadRes
         ];
     }
 
     $lead =
-        $leadRes['result'] ?? [];
+        $leadRes['result'] ??
+        [];
 
     $calc =
         calculateLeadDistrict(
             $lead,
-            $appOptions,
+            $options,
             $auth
         );
 
     if (
-        empty($calc['success'])
+        empty(
+            $calc['success']
+        )
     ) {
         return $calc;
     }
@@ -1149,27 +1303,28 @@ function syncLeadDistrict(
             : '';
 
     $current =
-        (string)(
-            $lead[LEAD_FED_FIELD] ?? ''
+        trim(
+            (string)(
+                $lead[
+                    LEAD_FED_FIELD
+                ] ?? ''
+            )
         );
 
     /*
-     * Ничего не обновляем,
-     * если значение уже правильное.
-     *
-     * Это защищает ONCRMLEADUPDATE
-     * от бесконечного цикла.
+     * Защита от цикла события.
      */
     if ($current === $target) {
-
-        return array_merge(
-            $calc,
-            [
-                'success' => true,
-                'updated' => false,
-                'reason' => 'already_actual'
-            ]
-        );
+        return
+            array_merge(
+                $calc,
+                [
+                    'success' => true,
+                    'updated' => false,
+                    'reason' =>
+                        'already_actual'
+                ]
+            );
     }
 
     $update =
@@ -1177,201 +1332,48 @@ function syncLeadDistrict(
             'crm.lead.update',
             [
                 'id' => $leadId,
+
                 'fields' => [
                     LEAD_FED_FIELD =>
                         $target
                 ],
+
                 'params' => [
-                    'REGISTER_SONET_EVENT' => 'N',
-                    'REGISTER_HISTORY_EVENT' => 'N'
+                    'REGISTER_SONET_EVENT'
+                        => 'N',
+
+                    'REGISTER_HISTORY_EVENT'
+                        => 'N'
                 ]
             ],
             $auth
         );
 
-    if (!empty($update['error'])) {
-        return array_merge(
+    if (
+        !empty(
+            $update['error']
+        )
+    ) {
+        return
+            array_merge(
+                $calc,
+                [
+                    'success' => false,
+                    'updated' => false,
+                    'reason' =>
+                        'lead_update_error',
+                    'error' => $update
+                ]
+            );
+    }
+
+    return
+        array_merge(
             $calc,
             [
-                'success' => false,
-                'updated' => false,
-                'reason' => 'lead_update_error',
-                'error' => $update
+                'success' => true,
+                'updated' => true,
+                'reason' => 'updated'
             ]
         );
-    }
-
-    return array_merge(
-        $calc,
-        [
-            'success' => true,
-            'updated' => true,
-            'reason' => 'updated'
-        ]
-    );
-}
-
-/*
- * ============================================================
- * ПЕРЕНОС ЛИД → СДЕЛКА
- * ============================================================
- */
-
-function transferLeadDistrictToDeal(
-    $dealId,
-    $auth
-) {
-
-    $dealRes =
-        callBitrix(
-            'crm.deal.get',
-            [
-                'id' => $dealId
-            ],
-            $auth
-        );
-
-    if (!empty($dealRes['error'])) {
-        return [
-            'success' => false,
-            'reason' => 'deal_get_error',
-            'error' => $dealRes
-        ];
-    }
-
-    $deal =
-        $dealRes['result'] ?? [];
-
-    /*
-     * Главное правило:
-     * если в сделке ФО уже заполнен —
-     * вообще ничего не трогаем.
-     */
-    $currentDealDistrict =
-        trim(
-            (string)(
-                $deal[DEAL_FED_FIELD] ?? ''
-            )
-        );
-
-    if ($currentDealDistrict !== '') {
-        return [
-            'success' => true,
-            'updated' => false,
-            'reason' => 'deal_already_has_district',
-            'districtName' =>
-                $currentDealDistrict
-        ];
-    }
-
-    $leadId =
-        $deal['LEAD_ID'] ?? null;
-
-    if (!$leadId) {
-        return [
-            'success' => true,
-            'updated' => false,
-            'reason' => 'deal_has_no_lead'
-        ];
-    }
-
-    $leadRes =
-        callBitrix(
-            'crm.lead.get',
-            [
-                'id' => $leadId
-            ],
-            $auth
-        );
-
-    if (!empty($leadRes['error'])) {
-        return [
-            'success' => false,
-            'updated' => false,
-            'reason' => 'source_lead_get_error',
-            'lead_id' => $leadId,
-            'error' => $leadRes
-        ];
-    }
-
-    $lead =
-        $leadRes['result'] ?? [];
-
-    $leadDistrict =
-        trim(
-            (string)(
-                $lead[LEAD_FED_FIELD] ?? ''
-            )
-        );
-
-    /*
-     * Если по какой-то причине лид ещё не успел
-     * получить ФО — пробуем рассчитать его прямо сейчас.
-     */
-    if ($leadDistrict === '') {
-
-        $leadSync =
-            syncLeadDistrict(
-                $leadId,
-                $auth
-            );
-
-        if (
-            ($leadSync['status'] ?? '') === 'ok'
-        ) {
-            $leadDistrict =
-                trim(
-                    (string)(
-                        $leadSync['districtName'] ?? ''
-                    )
-                );
-        }
-    }
-
-    if ($leadDistrict === '') {
-        return [
-            'success' => true,
-            'updated' => false,
-            'reason' => 'lead_has_no_district',
-            'lead_id' => $leadId
-        ];
-    }
-
-    $update =
-        callBitrix(
-            'crm.deal.update',
-            [
-                'id' => $dealId,
-
-                'fields' => [
-                    DEAL_FED_FIELD =>
-                        $leadDistrict
-                ],
-
-                'params' => [
-                    'REGISTER_SONET_EVENT' => 'N',
-                    'REGISTER_HISTORY_EVENT' => 'N'
-                ]
-            ],
-            $auth
-        );
-
-    if (!empty($update['error'])) {
-        return [
-            'success' => false,
-            'updated' => false,
-            'reason' => 'deal_update_error',
-            'error' => $update
-        ];
-    }
-
-    return [
-        'success' => true,
-        'updated' => true,
-        'reason' =>
-            'district_copied_from_lead',
-        'lead_id' => $leadId,
-        'districtName' =>
-            $leadDistrict
-    ];
 }
