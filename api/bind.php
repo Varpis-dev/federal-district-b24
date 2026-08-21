@@ -2,10 +2,6 @@
 
 require_once __DIR__ . '/common.php';
 
-header(
-    'Content-Type: application/json; charset=utf-8'
-);
-
 $input =
     json_decode(
         file_get_contents('php://input'),
@@ -41,36 +37,23 @@ $fieldUrl =
 $eventsUrl =
     $baseUrl . '/events';
 
-$visualUserTypeId =
+$visualTypeId =
     'fed_district_manager';
 
 $visualFieldName =
     'UF_CRM_FEDERAL_DISTRICT_MANAGER';
 
-$dealTextFieldName =
-    DEAL_FED_FIELD;
-
-$leadTextFieldName =
-    LEAD_FED_FIELD;
-
-/*
- * ============================================================
- * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
- * ============================================================
- */
-
-function getExistingUserField(
+function getExistingField(
     $entity,
     $fieldName,
     $auth
 ) {
-
     $method =
         $entity === 'lead'
             ? 'crm.lead.userfield.list'
             : 'crm.deal.userfield.list';
 
-    $result =
+    $res =
         callBitrix(
             $method,
             [
@@ -82,22 +65,27 @@ function getExistingUserField(
             $auth
         );
 
-    if (!empty($result['error'])) {
+    if (
+        !empty(
+            $res['error']
+        )
+    ) {
         return [];
     }
 
-    return $result['result'] ?? [];
+    return
+        $res['result'] ??
+        [];
 }
 
-function createStringUserField(
+function createStringField(
     $entity,
     $fieldName,
     $label,
     $auth
 ) {
-
     $existing =
-        getExistingUserField(
+        getExistingField(
             $entity,
             $fieldName,
             $auth
@@ -121,6 +109,7 @@ function createStringUserField(
             $method,
             [
                 'fields' => [
+
                     'FIELD_NAME' =>
                         $fieldName,
 
@@ -133,13 +122,20 @@ function createStringUserField(
                     'LIST_FILTER_LABEL' =>
                         $label,
 
+                    'HELP_MESSAGE' =>
+                        'Федеральный округ',
+
                     'USER_TYPE_ID' =>
                         'string',
+
+                    'XML_ID' =>
+                        $entity === 'lead'
+                            ? 'LEAD_FEDERAL_DISTRICT_TEXT'
+                            : 'DEAL_FEDERAL_DISTRICT_TEXT',
 
                     'MULTIPLE' => 'N',
                     'MANDATORY' => 'N',
                     'SHOW_FILTER' => 'Y',
-                    'EDIT_IN_LIST' => 'Y',
                     'SORT' => 101,
 
                     'SETTINGS' => [
@@ -161,9 +157,9 @@ function createStringUserField(
 }
 
 /*
- * ============================================================
- * 1. РЕГИСТРАЦИЯ КРАСИВОГО ТИПА ПОЛЯ
- * ============================================================
+ * =====================================================
+ * РЕГИСТРИРУЕМ БОЛЬШОЙ ТИП ПОЛЯ
+ * =====================================================
  */
 
 $typeResult =
@@ -171,7 +167,7 @@ $typeResult =
         'userfieldtype.add',
         [
             'USER_TYPE_ID' =>
-                $visualUserTypeId,
+                $visualTypeId,
 
             'HANDLER' =>
                 $fieldUrl,
@@ -180,7 +176,7 @@ $typeResult =
                 'Федеральный округ сделки',
 
             'DESCRIPTION' =>
-                'Федеральный округ и менеджер',
+                'Определение федерального округа и менеджера по городу и области',
 
             'OPTIONS' => [
                 'height' => 130
@@ -190,9 +186,9 @@ $typeResult =
     );
 
 /*
- * ============================================================
- * 2. КРАСИВОЕ ПОЛЕ В СДЕЛКЕ
- * ============================================================
+ * =====================================================
+ * БОЛЬШОЕ ПОЛЕ СДЕЛКИ
+ * =====================================================
  */
 
 $appInfo =
@@ -214,14 +210,14 @@ if ($appId) {
         'rest_' .
         $appId .
         '_' .
-        $visualUserTypeId;
+        $visualTypeId;
 }
 
 $possibleTypes[] =
-    $visualUserTypeId;
+    $visualTypeId;
 
 $visualExisting =
-    getExistingUserField(
+    getExistingField(
         'deal',
         $visualFieldName,
         $auth
@@ -244,6 +240,7 @@ if (empty($visualExisting)) {
                 'crm.deal.userfield.add',
                 [
                     'fields' => [
+
                         'FIELD_NAME' =>
                             $visualFieldName,
 
@@ -259,6 +256,9 @@ if (empty($visualExisting)) {
                         'USER_TYPE_ID' =>
                             $actualType,
 
+                        'XML_ID' =>
+                            'FEDERAL_DISTRICT_MANAGER',
+
                         'MULTIPLE' => 'N',
                         'MANDATORY' => 'N',
                         'SHOW_FILTER' => 'N',
@@ -270,7 +270,8 @@ if (empty($visualExisting)) {
 
         $visualResult = [
             'already_exists' => false,
-            'type' => $actualType,
+            'used_type' =>
+                $actualType,
             'result' => $add
         ];
 
@@ -284,47 +285,57 @@ if (empty($visualExisting)) {
 }
 
 /*
- * ============================================================
- * 3. СТРОКОВОЕ ФО В ЛИДЕ
- * ============================================================
+ * =====================================================
+ * СТРОКОВОЕ ПОЛЕ ЛИДА
+ * =====================================================
  */
 
-$leadTextResult =
-    createStringUserField(
+$leadString =
+    createStringField(
         'lead',
-        $leadTextFieldName,
+        LEAD_FED_FIELD,
         'Федеральный округ',
         $auth
     );
 
 /*
- * ============================================================
- * 4. СТРОКОВОЕ ФО В СДЕЛКЕ
- * ============================================================
+ * =====================================================
+ * СТРОКОВОЕ ПОЛЕ СДЕЛКИ
+ *
+ * Только создаём.
+ * Приложение его НЕ заполняет.
+ * Потом используешь БП.
+ * =====================================================
  */
 
-$dealTextResult =
-    createStringUserField(
+$dealString =
+    createStringField(
         'deal',
-        $dealTextFieldName,
+        DEAL_FED_FIELD,
         'Федеральный округ (строка)',
         $auth
     );
 
 /*
- * ============================================================
- * 5. СОБЫТИЯ
- * ============================================================
+ * =====================================================
+ * УБИРАЕМ СТАРЫЕ СОБЫТИЯ СДЕЛОК
+ * =====================================================
  */
 
-/*
- * На всякий случай снимаем старую подписку
- * ONCRMDEALUPDATE.
- *
- * Даже если unbind вернёт ошибку —
- * новый events.php всё равно её игнорирует.
- */
-$unbindOldDealUpdate =
+$unbindDealAdd =
+    callBitrix(
+        'event.unbind',
+        [
+            'event' =>
+                'ONCRMDEALADD',
+
+            'handler' =>
+                $eventsUrl
+        ],
+        $auth
+    );
+
+$unbindDealUpdate =
     callBitrix(
         'event.unbind',
         [
@@ -338,8 +349,43 @@ $unbindOldDealUpdate =
     );
 
 /*
- * Лид создан
+ * Чтобы повторное нажатие кнопки
+ * не плодило подписки — сначала
+ * снимаем подписки лидов.
  */
+
+$unbindLeadAdd =
+    callBitrix(
+        'event.unbind',
+        [
+            'event' =>
+                'ONCRMLEADADD',
+
+            'handler' =>
+                $eventsUrl
+        ],
+        $auth
+    );
+
+$unbindLeadUpdate =
+    callBitrix(
+        'event.unbind',
+        [
+            'event' =>
+                'ONCRMLEADUPDATE',
+
+            'handler' =>
+                $eventsUrl
+        ],
+        $auth
+    );
+
+/*
+ * =====================================================
+ * ПОДКЛЮЧАЕМ ТОЛЬКО ЛИДЫ
+ * =====================================================
+ */
+
 $bindLeadAdd =
     callBitrix(
         'event.bind',
@@ -353,9 +399,6 @@ $bindLeadAdd =
         $auth
     );
 
-/*
- * Лид изменился
- */
 $bindLeadUpdate =
     callBitrix(
         'event.bind',
@@ -369,35 +412,18 @@ $bindLeadUpdate =
         $auth
     );
 
-/*
- * Сделка создана.
- * Нужен только перенос ФО из лида.
- */
-$bindDealAdd =
-    callBitrix(
-        'event.bind',
-        [
-            'event' =>
-                'ONCRMDEALADD',
-
-            'handler' =>
-                $eventsUrl
-        ],
-        $auth
-    );
-
 jsonResponse([
     'success' => true,
 
     'message' =>
-        'Поля созданы/проверены, события подключены.',
+        'Поля проверены/созданы. Подключены только события лидов.',
 
     'fields' => [
-        'lead_text' =>
-            $leadTextResult,
+        'lead_string' =>
+            $leadString,
 
-        'deal_text' =>
-            $dealTextResult,
+        'deal_string' =>
+            $dealString,
 
         'deal_visual' =>
             $visualResult
@@ -413,18 +439,24 @@ jsonResponse([
         'lead_update' =>
             $bindLeadUpdate,
 
-        'deal_add' =>
-            $bindDealAdd,
+        'deal_add_removed' =>
+            $unbindDealAdd,
 
-        'old_deal_update_unbind' =>
-            $unbindOldDealUpdate
+        'deal_update_removed' =>
+            $unbindDealUpdate
     ],
 
-    'codes' => [
-        'lead' =>
-            $leadTextFieldName,
+    'field_codes' => [
+        'lead_string' =>
+            LEAD_FED_FIELD,
 
-        'deal' =>
-            $dealTextFieldName
-    ]
+        'deal_string' =>
+            DEAL_FED_FIELD,
+
+        'deal_visual' =>
+            $visualFieldName
+    ],
+
+    'important' =>
+        'Приложение НЕ переносит и НЕ меняет строковый ФО сделки.'
 ]);
