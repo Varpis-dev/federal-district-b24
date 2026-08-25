@@ -1,753 +1,632 @@
 <?php
-header('Content-Type: text/html; charset=utf-8');
-header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-?>
-<!DOCTYPE html>
-<html lang="ru">
 
-<head>
+require_once __DIR__ . '/common.php';
 
-<meta charset="UTF-8">
+$input = json_decode(
+    file_get_contents('php://input'),
+    true
+);
 
-<title>Федеральный округ</title>
-
-<script src="https://api.bitrix24.com/api/v1/"></script>
-<script src="/district.js"></script>
-
-<style>
-
-html,
-body {
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
+if (!is_array($input)) {
+    $input = $_REQUEST;
 }
 
-.wrap {
-    box-sizing: border-box;
-    width: 100%;
-    min-height: 120px;
-    padding: 12px 14px;
+$auth = normalizeAuth($input);
 
-    border-radius: 16px;
-    border: 1px solid #d7e3f5;
-
-    background:
-        linear-gradient(
-            135deg,
-            #f4f8ff 0%,
-            #ffffff 75%
-        );
-
-    box-shadow:
-        0 4px 14px
-        rgba(24, 91, 170, .08);
-}
-
-.label {
-    margin-bottom: 6px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #7b8794;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-}
-
-.main {
-    margin-bottom: 8px;
-    font-size: 22px;
-    line-height: 1.15;
-    font-weight: 800;
-    color: #111827;
-}
-
-.manager {
-    display: inline-flex;
-    align-items: center;
-    margin-bottom: 8px;
-    padding: 5px 9px;
-    border-radius: 999px;
-    background: #e8f1ff;
-    color: #1456a3;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.place {
-    font-size: 13px;
-    line-height: 1.35;
-    color: #4b5563;
-    font-weight: 600;
-}
-
-.small {
-    margin-top: 6px;
-    font-size: 12px;
-    line-height: 1.35;
-    color: #7b8794;
-}
-
-.warn {
-    border-color: #f1d48a;
-
-    background:
-        linear-gradient(
-            135deg,
-            #fff8e6 0%,
-            #ffffff 75%
-        );
-}
-
-.warn .main {
-    color: #9a6a00;
-}
-
-.bad {
-    border-color: #efb7b3;
-
-    background:
-        linear-gradient(
-            135deg,
-            #fff1f0 0%,
-            #ffffff 75%
-        );
-}
-
-.bad .main {
-    color: #d92d20;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div
-    class="wrap"
-    id="wrap"
->
-
-<div class="label">
-Федеральный округ
-</div>
-
-<div
-    class="main"
-    id="main"
->
-Загрузка...
-</div>
-
-<div
-    class="manager"
-    id="manager"
-    style="display:none;"
-></div>
-
-<div
-    class="place"
-    id="place"
-></div>
-
-<div
-    class="small"
-    id="small"
-></div>
-
-</div>
-
-
-<script>
-
-const wrapEl =
-    document.getElementById(
-        'wrap'
-    );
-
-const mainEl =
-    document.getElementById(
-        'main'
-    );
-
-const managerEl =
-    document.getElementById(
-        'manager'
-    );
-
-const placeEl =
-    document.getElementById(
-        'place'
-    );
-
-const smallEl =
-    document.getElementById(
-        'small'
-    );
-
-
-const DEFAULT_MANAGERS = {
-
-    central:
-        'Людмила',
-
-    northwest:
-        'Виктория',
-
-    south:
-        'Вячеслав',
-
-    northCaucasus:
-        'Вячеслав',
-
-    volga:
-        'Виктория',
-
-    ural:
-        'Вячеслав',
-
-    siberian:
-        'Людмила',
-
-    farEast:
-        'Людмила'
-};
-
-
-function renderError(
-    title,
-    message
+if (
+    empty($auth['domain']) ||
+    empty($auth['access_token'])
 ) {
+    jsonResponse([
+        'success' => false,
+        'reason' => 'no_auth'
+    ]);
+}
 
-    wrapEl.className =
-        'wrap bad';
+$baseUrl = getBaseUrl();
 
-    mainEl.textContent =
-        title;
+$fieldUrl =
+    $baseUrl . '/field';
 
-    managerEl.style.display =
-        'none';
+$eventsBase =
+    $baseUrl . '/events';
 
-    placeEl.textContent =
-        '';
 
-    smallEl.textContent =
-        message || '';
+/*
+ * ============================================================
+ * НАСТРОЙКИ ПРИЛОЖЕНИЯ
+ * ============================================================
+ */
+
+$optionsRes = callBitrix(
+    'app.option.get',
+    [],
+    $auth
+);
+
+if (!empty($optionsRes['error'])) {
+    jsonResponse([
+        'success' => false,
+        'reason' => 'options_error',
+        'error' => $optionsRes
+    ]);
+}
+
+$options =
+    $optionsRes['result'] ?? [];
+
+$leadCityField =
+    $options['leadCityField'] ?? '';
+
+$leadRegionField =
+    $options['leadRegionField'] ?? '';
+
+if (!$leadCityField) {
+    jsonResponse([
+        'success' => false,
+        'reason' => 'no_lead_city_field',
+        'message' =>
+            'Сначала выберите поле города лида и сохраните настройки.'
+    ]);
 }
 
 
-window.addEventListener(
-    'error',
-    function(event) {
+/*
+ * ============================================================
+ * ПОИСК ПОЛЯ
+ * ============================================================
+ */
 
-        renderError(
-            'Ошибка JavaScript',
-            event.message ||
-            'Неизвестная ошибка'
-        );
+function getExistingField(
+    $entity,
+    $fieldName,
+    $auth
+) {
+    $method =
+        $entity === 'lead'
+            ? 'crm.lead.userfield.list'
+            : 'crm.deal.userfield.list';
+
+    $result = callBitrix(
+        $method,
+        [
+            'filter' => [
+                'FIELD_NAME' =>
+                    $fieldName
+            ]
+        ],
+        $auth
+    );
+
+    if (!empty($result['error'])) {
+        return [];
     }
+
+    return
+        $result['result'] ?? [];
+}
+
+
+/*
+ * ============================================================
+ * СОЗДАНИЕ СТРОКОВОГО ПОЛЯ
+ * ============================================================
+ */
+
+function createStringField(
+    $entity,
+    $fieldName,
+    $label,
+    $auth
+) {
+    $existing = getExistingField(
+        $entity,
+        $fieldName,
+        $auth
+    );
+
+    if (!empty($existing)) {
+        return [
+            'success' => true,
+            'already_exists' => true
+        ];
+    }
+
+    $method =
+        $entity === 'lead'
+            ? 'crm.lead.userfield.add'
+            : 'crm.deal.userfield.add';
+
+    $result = callBitrix(
+        $method,
+        [
+            'fields' => [
+                'FIELD_NAME' =>
+                    $fieldName,
+
+                'EDIT_FORM_LABEL' =>
+                    $label,
+
+                'LIST_COLUMN_LABEL' =>
+                    $label,
+
+                'LIST_FILTER_LABEL' =>
+                    $label,
+
+                'USER_TYPE_ID' =>
+                    'string',
+
+                'MULTIPLE' =>
+                    'N',
+
+                'MANDATORY' =>
+                    'N',
+
+                'SHOW_FILTER' =>
+                    'Y',
+
+                'EDIT_IN_LIST' =>
+                    'Y',
+
+                'SORT' =>
+                    101,
+
+                'SETTINGS' => [
+                    'SIZE' => 30,
+                    'ROWS' => 1
+                ]
+            ]
+        ],
+        $auth
+    );
+
+    return [
+        'success' =>
+            empty($result['error']),
+
+        'already_exists' =>
+            false,
+
+        'result' =>
+            $result
+    ];
+}
+
+
+/*
+ * ============================================================
+ * СТРОКОВОЕ ПОЛЕ ЛИДА
+ * ============================================================
+ */
+
+$leadString = createStringField(
+    'lead',
+    LEAD_FED_FIELD,
+    'Федеральный округ',
+    $auth
 );
 
 
-function bxCall(
-    method,
-    params = {},
-    timeoutMs = 20000
-) {
+/*
+ * ============================================================
+ * СТРОКОВОЕ ПОЛЕ СДЕЛКИ
+ *
+ * Только создаём.
+ * Автоматически его приложение не заполняет.
+ * ============================================================
+ */
 
-    return new Promise(
-        (resolve, reject) => {
-
-            let finished =
-                false;
-
-
-            const timer =
-                setTimeout(
-                    function() {
-
-                        if (!finished) {
-
-                            finished =
-                                true;
-
-                            reject(
-                                new Error(
-                                    'Таймаут ' +
-                                    method
-                                )
-                            );
-                        }
-
-                    },
-                    timeoutMs
-                );
+$dealString = createStringField(
+    'deal',
+    DEAL_FED_FIELD,
+    'Федеральный округ (строка)',
+    $auth
+);
 
 
-            try {
+/*
+ * ============================================================
+ * БОЛЬШОЕ ПОЛЕ
+ * ============================================================
+ */
 
-                BX24.callMethod(
-                    method,
-                    params,
-                    function(result) {
+$visualTypeId =
+    'fed_district_manager';
 
-                        if (finished) {
-                            return;
-                        }
-
-
-                        finished =
-                            true;
+$visualFieldName =
+    'UF_CRM_FEDERAL_DISTRICT_MANAGER';
 
 
-                        clearTimeout(
-                            timer
-                        );
+/*
+ * Сначала пытаемся обновить уже существующий
+ * пользовательский тип на новый Vercel handler.
+ */
+
+$typeUpdate = callBitrix(
+    'userfieldtype.update',
+    [
+        'USER_TYPE_ID' =>
+            $visualTypeId,
+
+        'HANDLER' =>
+            $fieldUrl,
+
+        'TITLE' =>
+            'Федеральный округ сделки',
+
+        'DESCRIPTION' =>
+            'Федеральный округ и менеджер по городу и области сделки',
+
+        'OPTIONS' => [
+            'height' => 150
+        ]
+    ],
+    $auth
+);
+
+$typeAction =
+    'updated';
+
+$typeResult =
+    $typeUpdate;
 
 
-                        if (!result) {
+/*
+ * Если типа ещё нет — регистрируем.
+ */
 
-                            reject(
-                                new Error(
-                                    'Пустой ответ ' +
-                                    method
-                                )
-                            );
+if (!empty($typeUpdate['error'])) {
 
-                            return;
-                        }
+    $typeAdd = callBitrix(
+        'userfieldtype.add',
+        [
+            'USER_TYPE_ID' =>
+                $visualTypeId,
 
+            'HANDLER' =>
+                $fieldUrl,
 
-                        if (
-                            result.error()
-                        ) {
+            'TITLE' =>
+                'Федеральный округ сделки',
 
-                            reject(
-                                new Error(
-                                    method +
-                                    ': ' +
-                                    JSON.stringify(
-                                        result.error()
-                                    )
-                                )
-                            );
+            'DESCRIPTION' =>
+                'Федеральный округ и менеджер по городу и области сделки',
 
-                            return;
-                        }
-
-
-                        resolve(
-                            result.data()
-                        );
-                    }
-                );
-
-            } catch (error) {
-
-                clearTimeout(
-                    timer
-                );
-
-                reject(
-                    error
-                );
-            }
-        }
+            'OPTIONS' => [
+                'height' => 150
+            ]
+        ],
+        $auth
     );
-}
 
+    if (empty($typeAdd['error'])) {
 
-function getManager(
-    options,
-    districtKey
-) {
+        $typeAction =
+            'created';
 
-    const managers = {
-
-        central:
-            options.managerCentral ||
-            DEFAULT_MANAGERS.central,
-
-        northwest:
-            options.managerNorthwest ||
-            DEFAULT_MANAGERS.northwest,
-
-        south:
-            options.managerSouth ||
-            DEFAULT_MANAGERS.south,
-
-        northCaucasus:
-            options.managerNorthCaucasus ||
-            DEFAULT_MANAGERS
-                .northCaucasus,
-
-        volga:
-            options.managerVolga ||
-            DEFAULT_MANAGERS.volga,
-
-        ural:
-            options.managerUral ||
-            DEFAULT_MANAGERS.ural,
-
-        siberian:
-            options.managerSiberian ||
-            DEFAULT_MANAGERS.siberian,
-
-        farEast:
-            options.managerFarEast ||
-            DEFAULT_MANAGERS.farEast
-    };
-
-
-    return (
-        managers[districtKey] ||
-        ''
-    );
-}
-
-
-function renderOk(
-    district,
-    manager,
-    city,
-    region,
-    source
-) {
-
-    wrapEl.className =
-        'wrap';
-
-
-    mainEl.textContent =
-        manager
-            ? district +
-              ' (' +
-              manager +
-              ')'
-            : district;
-
-
-    if (manager) {
-
-        managerEl.style.display =
-            'inline-flex';
-
-        managerEl.textContent =
-            'Менеджер: ' +
-            manager;
+        $typeResult =
+            $typeAdd;
 
     } else {
 
-        managerEl.style.display =
-            'none';
-    }
-
-
-    placeEl.textContent =
-        region
-            ? city +
-              ', ' +
-              region
-            : city;
-
-
-    smallEl.textContent =
-        source === 'region'
-            ? 'Округ определён по области/региону'
-            : 'Округ определён по городу';
-
-
-    if (
-        typeof BX24 !==
-            'undefined' &&
-        typeof BX24.fitWindow ===
-            'function'
-    ) {
-
-        BX24.fitWindow();
+        jsonResponse([
+            'success' => false,
+            'reason' =>
+                'visual_type_error',
+            'field_handler' =>
+                $fieldUrl,
+            'update_error' =>
+                $typeUpdate,
+            'add_error' =>
+                $typeAdd
+        ]);
     }
 }
 
 
-function renderNeedRegion(
-    city
-) {
+/*
+ * ============================================================
+ * APP ID
+ * ============================================================
+ */
 
-    wrapEl.className =
-        'wrap warn';
+$appInfo = callBitrix(
+    'app.info',
+    [],
+    $auth
+);
 
-
-    mainEl.textContent =
-        'Нужна область';
-
-
-    managerEl.style.display =
-        'none';
-
-
-    placeEl.textContent =
-        city || '';
-
-
-    smallEl.textContent =
-        'Для этого города нужна область для точного определения округа.';
+if (!empty($appInfo['error'])) {
+    jsonResponse([
+        'success' => false,
+        'reason' => 'app_info_error',
+        'error' => $appInfo
+    ]);
 }
 
+$appId =
+    $appInfo['result']['ID'] ??
+    $appInfo['result']['APP_ID'] ??
+    null;
 
-async function loadField() {
 
-    if (
-        typeof FederalDistrict ===
-        'undefined'
+/*
+ * ============================================================
+ * ПРОВЕРЯЕМ БОЛЬШОЕ ПОЛЕ
+ * ============================================================
+ */
+
+$visualExisting = getExistingField(
+    'deal',
+    $visualFieldName,
+    $auth
+);
+
+$visualResult = [
+    'already_exists' =>
+        !empty($visualExisting)
+];
+
+if (empty($visualExisting)) {
+
+    $possibleTypes = [];
+
+    if ($appId) {
+        $possibleTypes[] =
+            'rest_' .
+            $appId .
+            '_' .
+            $visualTypeId;
+    }
+
+    $possibleTypes[] =
+        $visualTypeId;
+
+    foreach (
+        $possibleTypes
+        as $actualType
     ) {
 
-        throw new Error(
-            'Не загрузился /district.js'
-        );
-    }
+        $add = callBitrix(
+            'crm.deal.userfield.add',
+            [
+                'fields' => [
+                    'FIELD_NAME' =>
+                        $visualFieldName,
 
+                    'EDIT_FORM_LABEL' =>
+                        'Федеральный округ',
 
-    const info =
-        BX24.placement.info();
+                    'LIST_COLUMN_LABEL' =>
+                        'Федеральный округ',
 
+                    'LIST_FILTER_LABEL' =>
+                        'Федеральный округ',
 
-    const placement =
-        info &&
-        info.options
-            ? info.options
-            : {};
+                    'USER_TYPE_ID' =>
+                        $actualType,
 
+                    'MULTIPLE' =>
+                        'N',
 
-    const dealId =
-        placement.ENTITY_VALUE_ID ||
+                    'MANDATORY' =>
+                        'N',
 
-        placement.ID ||
+                    'SHOW_FILTER' =>
+                        'N',
 
-        placement.id ||
-
-        placement.DEAL_ID ||
-
-        (
-            placement.ENTITY_DATA &&
-            (
-                placement
-                    .ENTITY_DATA
-                    .entityId ||
-
-                placement
-                    .ENTITY_DATA
-                    .id
-            )
-        ) ||
-
-        null;
-
-
-    if (!dealId) {
-
-        throw new Error(
-            'Не удалось определить ID сделки'
-        );
-    }
-
-
-    /*
-     * Все REST-запросы выполняет браузер
-     * напрямую в Bitrix24.
-     *
-     * Vercel Function их НЕ ждёт.
-     */
-    const options =
-        await bxCall(
-            'app.option.get',
-            {}
-        );
-
-
-    const deal =
-        await bxCall(
-            'crm.deal.get',
-            {
-                id:
-                    dealId
-            }
-        );
-
-
-    const fields =
-        await bxCall(
-            'crm.deal.fields',
-            {}
-        );
-
-
-    const cityField =
-        options.dealCityField ||
-        '';
-
-
-    const regionField =
-        options.dealRegionField ||
-        '';
-
-
-    if (!cityField) {
-
-        throw new Error(
-            'В настройках приложения не выбрано поле города сделки'
-        );
-    }
-
-
-    const city =
-        FederalDistrict
-            .parseFieldValue(
-                deal[
-                    cityField
-                ],
-                fields[
-                    cityField
+                    'SORT' =>
+                        100
                 ]
-            );
-
-
-    const region =
-        regionField
-            ? FederalDistrict
-                .parseFieldValue(
-                    deal[
-                        regionField
-                    ],
-                    fields[
-                        regionField
-                    ]
-                )
-            : '';
-
-
-    if (!city) {
-
-        renderError(
-            'Город не заполнен',
-            'Заполните город в сделке.'
+            ],
+            $auth
         );
 
-        return;
-    }
+        $visualResult = [
+            'already_exists' =>
+                false,
 
+            'type' =>
+                $actualType,
 
-    /*
-     * Главное:
-     * строковое поле сделки тут
-     * вообще не используется.
-     */
-    const result =
-        FederalDistrict
-            .calcDistrictName(
-                city,
-                region
-            );
+            'result' =>
+                $add
+        ];
 
-
-    if (
-        result.status ===
-        'need_region'
-    ) {
-
-        renderNeedRegion(
-            city
-        );
-
-        return;
-    }
-
-
-    if (
-        result.status !==
-            'ok' ||
-        !result.districtName
-    ) {
-
-        wrapEl.className =
-            'wrap bad';
-
-
-        mainEl.textContent =
-            'Округ не определён';
-
-
-        managerEl.style.display =
-            'none';
-
-
-        placeEl.textContent =
-            region
-                ? city +
-                  ', ' +
-                  region
-                : city;
-
-
-        smallEl.textContent =
-            'Проверьте город и область сделки.';
-
-
-        return;
-    }
-
-
-    const manager =
-        getManager(
-            options,
-            result.districtKey
-        );
-
-
-    renderOk(
-        result.districtName,
-        manager,
-        city,
-        region,
-        result.source
-    );
-}
-
-
-if (
-    typeof BX24 ===
-    'undefined'
-) {
-
-    renderError(
-        'BX24 не загрузился',
-        'Не загрузилась библиотека Bitrix24.'
-    );
-
-} else {
-
-    BX24.init(
-        function() {
-
-            loadField()
-                .catch(
-                    function(error) {
-
-                        renderError(
-                            'Ошибка загрузки',
-                            String(
-                                error.message ||
-                                error
-                            )
-                        );
-                    }
-                );
+        if (
+            empty($add['error']) &&
+            isset($add['result'])
+        ) {
+            break;
         }
-    );
+    }
 }
 
-</script>
 
-</body>
-</html>
+/*
+ * ============================================================
+ * УДАЛЯЕМ СТАРЫЕ ПОДПИСКИ
+ * ============================================================
+ */
+
+$eventGet = callBitrix(
+    'event.get',
+    [],
+    $auth
+);
+
+$removedEvents = [];
+
+$relevantEvents = [
+    'ONCRMLEADADD',
+    'ONCRMLEADUPDATE',
+    'ONCRMDEALADD',
+    'ONCRMDEALUPDATE'
+];
+
+if (empty($eventGet['error'])) {
+
+    foreach (
+        $eventGet['result'] ?? []
+        as $handler
+    ) {
+
+        $eventName = strtoupper(
+            (string)(
+                $handler['event'] ??
+                $handler['EVENT'] ??
+                ''
+            )
+        );
+
+        $handlerUrl = (string)(
+            $handler['handler'] ??
+            $handler['HANDLER'] ??
+            ''
+        );
+
+        if (
+            !in_array(
+                $eventName,
+                $relevantEvents,
+                true
+            )
+        ) {
+            continue;
+        }
+
+        if (!$handlerUrl) {
+            continue;
+        }
+
+        $unbind = callBitrix(
+            'event.unbind',
+            [
+                'event' =>
+                    $eventName,
+
+                'handler' =>
+                    $handlerUrl
+            ],
+            $auth
+        );
+
+        $removedEvents[] = [
+            'event' =>
+                $eventName,
+
+            'handler' =>
+                $handlerUrl,
+
+            'result' =>
+                $unbind
+        ];
+    }
+}
+
+
+/*
+ * ============================================================
+ * НОВЫЙ HANDLER ЛИДОВ
+ * ============================================================
+ */
+
+$handlerUrl =
+    $eventsBase .
+    '?city=' .
+    rawurlencode(
+        $leadCityField
+    );
+
+if ($leadRegionField) {
+
+    $handlerUrl .=
+        '&region=' .
+        rawurlencode(
+            $leadRegionField
+        );
+}
+
+
+/*
+ * ============================================================
+ * ПОДПИСКИ
+ * ============================================================
+ */
+
+$bindLeadAdd = callBitrix(
+    'event.bind',
+    [
+        'event' =>
+            'ONCRMLEADADD',
+
+        'handler' =>
+            $handlerUrl
+    ],
+    $auth
+);
+
+$bindLeadUpdate = callBitrix(
+    'event.bind',
+    [
+        'event' =>
+            'ONCRMLEADUPDATE',
+
+        'handler' =>
+            $handlerUrl
+    ],
+    $auth
+);
+
+
+/*
+ * ============================================================
+ * ОТВЕТ
+ * ============================================================
+ */
+
+jsonResponse([
+    'success' => true,
+
+    'message' =>
+        'Федеральные округа успешно подключены.',
+
+    'domain' =>
+        $baseUrl,
+
+    'visual_field_handler' =>
+        $fieldUrl,
+
+    'visual_type' => [
+        'action' =>
+            $typeAction,
+
+        'result' =>
+            $typeResult
+    ],
+
+    'fields' => [
+        'lead_string' =>
+            $leadString,
+
+        'deal_string' =>
+            $dealString,
+
+        'deal_visual' =>
+            $visualResult
+    ],
+
+    'events' => [
+        'removed_old' =>
+            $removedEvents,
+
+        'new_handler' =>
+            $handlerUrl,
+
+        'lead_add' =>
+            $bindLeadAdd,
+
+        'lead_update' =>
+            $bindLeadUpdate
+    ]
+]);
