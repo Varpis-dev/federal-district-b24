@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>
+Федеральный округ — настройки
+</title>
+
+<script src="https://api.bitrix24.com/api/v1/"></script>
+
+<style>
+
+body {
+    margin: 0;
+    padding: 24px;
+
+    font-family:
+        Arial,
+        sans-serif;
+
+    color: #111;
+}
+
+h1 {
+    margin-top: 0;
+}
+
+.section {
+    box-sizing: border-box;
+
+    max-width: 920px;
+
+    margin-top: 20px;
+    padding: 18px;
+
+    background: #f6f8fa;
+
+    border-radius: 14px;
+}
+
+.info {
+    box-sizing: border-box;
+
+    max-width: 920px;
+
+    padding: 14px 16px;
+
+    background: #edf7ff;
+
+    border:
+        1px solid
+        #cde5fb;
+
+    border-radius: 12px;
+
+    color: #36536c;
+
+    line-height: 1.45;
+}
+
+label {
+    display: block;
+
+    margin:
+        14px
+        0
+        6px;
+
+    font-weight: 700;
+}
+
+select,
+input {
+    box-sizing: border-box;
+
+    width: 100%;
+    max-width: 700px;
+
+    padding: 9px 11px;
+
+    font-size: 14px;
+
+    border:
+        1px solid
+        #c8d0da;
+
+    border-radius: 8px;
+
+    background: white;
+}
+
+.grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(220px, 320px)
+        minmax(220px, 360px);
+
+    gap: 12px 18px;
+
+    align-items: center;
+
+    max-width: 760px;
+}
+
+.district-label {
+    font-weight: 700;
+}
+
+.buttons {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    margin-top: 20px;
+}
+
+button {
+    padding: 11px 15px;
+
+    border-radius: 9px;
+
+    border:
+        1px solid
+        #b8c2cc;
+
+    background: white;
+
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+button.primary {
+    background: #0b7cff;
+    border-color: #0b7cff;
+    color: white;
+}
+
+button:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+#status {
+    box-sizing: border-box;
+
+    max-width: 920px;
+    min-height: 90px;
+
+    margin-top: 18px;
+    padding: 14px;
+
+    border:
+        1px solid
+        #e0e5eb;
+
+    border-radius: 12px;
+
+    background: white;
+
+    white-space: pre-wrap;
+
+    color: #444;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>
+Федеральный округ
+</h1>
+
+
+<div class="info">
+
+<strong>Лиды:</strong>
+при создании или изменении лида приложение
+определяет федеральный округ по городу + области
+и записывает его в обычное строковое поле
+<strong>«Федеральный округ»</strong>.
+
+<br><br>
+
+<strong>Сделки:</strong>
+строковое поле сделки приложение не изменяет.
+Большое визуальное поле самостоятельно определяет
+ФО по городу + области сделки и показывает менеджера.
+
+<br><br>
+
+Старые лиды автоматически не пересчитываются.
+
+</div>
+
+
+<div class="section">
+
+<h2>
+Лид
+</h2>
+
+<label for="leadCityField">
+Поле города
+</label>
+
+<select
+    id="leadCityField"
+></select>
+
+
+<label for="leadRegionField">
+Поле области / региона
+</label>
+
+<select
+    id="leadRegionField"
+></select>
+
+</div>
+
+
+<div class="section">
+
+<h2>
+Сделка — большое визуальное поле
+</h2>
+
+<label for="dealCityField">
+Поле города
+</label>
+
+<select
+    id="dealCityField"
+></select>
+
+
+<label for="dealRegionField">
+Поле области / региона
+</label>
+
+<select
+    id="dealRegionField"
+></select>
+
+</div>
+
+
+<div class="section">
+
+<h2>
+Менеджеры по федеральным округам
+</h2>
+
+<div class="grid">
+
+<div class="district-label">
+Центральный
+</div>
+
+<input
+    id="managerCentral"
+    value="Людмила"
+>
+
+
+<div class="district-label">
+Северо-Западный
+</div>
+
+<input
+    id="managerNorthwest"
+    value="Виктория"
+>
+
+
+<div class="district-label">
+Южный
+</div>
+
+<input
+    id="managerSouth"
+    value="Вячеслав"
+>
+
+
+<div class="district-label">
+Северо-Кавказский
+</div>
+
+<input
+    id="managerNorthCaucasus"
+    value="Вячеслав"
+>
+
+
+<div class="district-label">
+Приволжский
+</div>
+
+<input
+    id="managerVolga"
+    value="Виктория"
+>
+
+
+<div class="district-label">
+Уральский
+</div>
+
+<input
+    id="managerUral"
+    value="Вячеслав"
+>
+
+
+<div class="district-label">
+Сибирский
+</div>
+
+<input
+    id="managerSiberian"
+    value="Людмила"
+>
+
+
+<div class="district-label">
+Дальневосточный
+</div>
+
+<input
+    id="managerFarEast"
+    value="Людмила"
+>
+
+</div>
+
+</div>
+
+
+<div class="buttons">
+
+<button
+    class="primary"
+    id="saveBtn"
+>
+Сохранить настройки
+</button>
+
+
+<button
+    id="bindBtn"
+>
+Создать поля и подключить события
+</button>
+
+</div>
+
+
+<div id="status">
+Загрузка...
+</div>
+
+
+<script>
+
+const statusEl =
+    document.getElementById(
+        'status'
+    );
+
+
+const saveBtn =
+    document.getElementById(
+        'saveBtn'
+    );
+
+
+const bindBtn =
+    document.getElementById(
+        'bindBtn'
+    );
+
+
+function setStatus(text) {
+
+    statusEl.textContent =
+        text;
+}
+
+
+function bxCall(
+    method,
+    params = {},
+    timeoutMs = 20000
+) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            let finished = false;
+
+
+            const timer =
+                setTimeout(
+                    () => {
+
+                        if (!finished) {
+
+                            finished = true;
+
+                            reject(
+                                new Error(
+                                    'Таймаут ' +
+                                    method
+                                )
+                            );
+                        }
+
+                    },
+                    timeoutMs
+                );
+
+
+            BX24.callMethod(
+                method,
+                params,
+                function (res) {
+
+                    if (finished) {
+                        return;
+                    }
+
+
+                    finished = true;
+
+                    clearTimeout(
+                        timer
+                    );
+
+
+                    if (!res) {
+
+                        reject(
+                            new Error(
+                                'Пустой ответ ' +
+                                method
+                            )
+                        );
+
+                        return;
+                    }
+
+
+                    if (res.error()) {
+
+                        reject(
+                            new Error(
+                                JSON.stringify(
+                                    res.error()
+                                )
+                            )
+                        );
+
+                        return;
+                    }
+
+
+                    resolve(
+                        res.data()
+                    );
+                }
+            );
+        }
+    );
+}
+
+
+function getVal(id) {
+
+    return String(
+        document
+            .getElementById(id)
+            .value ||
+        ''
+    ).trim();
+}
+
+
+function setVal(
+    id,
+    value
+) {
+
+    document
+        .getElementById(id)
+        .value =
+        value || '';
+}
+
+
+function fillSelect(
+    element,
+    fields,
+    saved,
+    emptyText
+) {
+
+    element.innerHTML = '';
+
+
+    const empty =
+        document.createElement(
+            'option'
+        );
+
+
+    empty.value = '';
+
+    empty.textContent =
+        emptyText;
+
+
+    element.appendChild(
+        empty
+    );
+
+
+    Object.entries(
+        fields || {}
+    ).forEach(
+        ([code, field]) => {
+
+            const option =
+                document.createElement(
+                    'option'
+                );
+
+
+            const title =
+                field.formLabel ||
+                field.listLabel ||
+                field.title ||
+                code;
+
+
+            option.value =
+                code;
+
+
+            option.textContent =
+                code +
+                ' — ' +
+                title;
+
+
+            if (
+                code === saved
+            ) {
+
+                option.selected =
+                    true;
+            }
+
+
+            element.appendChild(
+                option
+            );
+        }
+    );
+}
+
+
+function applyManagers(
+    options
+) {
+
+    setVal(
+        'managerCentral',
+        options.managerCentral ||
+        'Людмила'
+    );
+
+
+    setVal(
+        'managerNorthwest',
+        options.managerNorthwest ||
+        'Виктория'
+    );
+
+
+    setVal(
+        'managerSouth',
+        options.managerSouth ||
+        'Вячеслав'
+    );
+
+
+    setVal(
+        'managerNorthCaucasus',
+        options.managerNorthCaucasus ||
+        'Вячеслав'
+    );
+
+
+    setVal(
+        'managerVolga',
+        options.managerVolga ||
+        'Виктория'
+    );
+
+
+    setVal(
+        'managerUral',
+        options.managerUral ||
+        'Вячеслав'
+    );
+
+
+    setVal(
+        'managerSiberian',
+        options.managerSiberian ||
+        'Людмила'
+    );
+
+
+    setVal(
+        'managerFarEast',
+        options.managerFarEast ||
+        'Людмила'
+    );
+}
+
+
+function getPayload() {
+
+    return {
+
+        leadCityField:
+            getVal(
+                'leadCityField'
+            ),
+
+
+        leadRegionField:
+            getVal(
+                'leadRegionField'
+            ),
+
+
+        dealCityField:
+            getVal(
+                'dealCityField'
+            ),
+
+
+        dealRegionField:
+            getVal(
+                'dealRegionField'
+            ),
+
+
+        managerCentral:
+            getVal(
+                'managerCentral'
+            ) || 'Людмила',
+
+
+        managerNorthwest:
+            getVal(
+                'managerNorthwest'
+            ) || 'Виктория',
+
+
+        managerSouth:
+            getVal(
+                'managerSouth'
+            ) || 'Вячеслав',
+
+
+        managerNorthCaucasus:
+            getVal(
+                'managerNorthCaucasus'
+            ) || 'Вячеслав',
+
+
+        managerVolga:
+            getVal(
+                'managerVolga'
+            ) || 'Виктория',
+
+
+        managerUral:
+            getVal(
+                'managerUral'
+            ) || 'Вячеслав',
+
+
+        managerSiberian:
+            getVal(
+                'managerSiberian'
+            ) || 'Людмила',
+
+
+        managerFarEast:
+            getVal(
+                'managerFarEast'
+            ) || 'Людмила'
+    };
+}
+
+
+async function loadSettings() {
+
+    setStatus(
+        'Загружаю настройки...'
+    );
+
+
+    const [
+        options,
+        leadFields,
+        dealFields
+    ] =
+        await Promise.all([
+
+            bxCall(
+                'app.option.get'
+            ),
+
+
+            bxCall(
+                'crm.lead.fields'
+            ),
+
+
+            bxCall(
+                'crm.deal.fields'
+            )
+
+        ]);
+
+
+    fillSelect(
+        document.getElementById(
+            'leadCityField'
+        ),
+
+        leadFields,
+
+        options.leadCityField ||
+        '',
+
+        'Выберите поле города'
+    );
+
+
+    fillSelect(
+        document.getElementById(
+            'leadRegionField'
+        ),
+
+        leadFields,
+
+        options.leadRegionField ||
+        '',
+
+        'Не использовать область'
+    );
+
+
+    fillSelect(
+        document.getElementById(
+            'dealCityField'
+        ),
+
+        dealFields,
+
+        options.dealCityField ||
+        '',
+
+        'Выберите поле города'
+    );
+
+
+    fillSelect(
+        document.getElementById(
+            'dealRegionField'
+        ),
+
+        dealFields,
+
+        options.dealRegionField ||
+        '',
+
+        'Не использовать область'
+    );
+
+
+    applyManagers(
+        options || {}
+    );
+
+
+    setStatus(
+        'Настройки загружены.'
+    );
+}
+
+
+async function saveSettings() {
+
+    const payload =
+        getPayload();
+
+
+    if (
+        !payload.leadCityField
+    ) {
+
+        throw new Error(
+            'Не выбрано поле города лида.'
+        );
+    }
+
+
+    if (
+        !payload.dealCityField
+    ) {
+
+        throw new Error(
+            'Не выбрано поле города сделки.'
+        );
+    }
+
+
+    await bxCall(
+        'app.option.set',
+        {
+            options:
+                payload
+        }
+    );
+
+
+    setStatus(
+        'Настройки сохранены ✅\n\n' +
+
+        'ЛИД\n' +
+
+        'Город: ' +
+        payload.leadCityField +
+        '\n' +
+
+        'Область: ' +
+        (
+            payload.leadRegionField ||
+            'не используется'
+        ) +
+
+        '\n\nСДЕЛКА\n' +
+
+        'Город: ' +
+        payload.dealCityField +
+        '\n' +
+
+        'Область: ' +
+        (
+            payload.dealRegionField ||
+            'не используется'
+        )
+    );
+
+
+    return payload;
+}
+
+
+async function runBind() {
+
+    const payload =
+        await saveSettings();
+
+
+    const auth =
+        BX24.getAuth();
+
+
+    if (
+        !auth ||
+        !auth.access_token ||
+        !auth.domain
+    ) {
+
+        throw new Error(
+            'Не удалось получить авторизацию Bitrix24.'
+        );
+    }
+
+
+    bindBtn.disabled =
+        true;
+
+
+    setStatus(
+        'Проверяю поля и переподключаю события...'
+    );
+
+
+    try {
+
+        const response =
+            await fetch(
+                '/bind',
+                {
+                    method:
+                        'POST',
+
+                    headers: {
+                        'Content-Type':
+                            'application/json'
+                    },
+
+                    body:
+                        JSON.stringify({
+                            auth
+                        })
+                }
+            );
+
+
+        const text =
+            await response.text();
+
+
+        let data;
+
+
+        try {
+
+            data =
+                JSON.parse(
+                    text
+                );
+
+        } catch {
+
+            throw new Error(
+                'Некорректный ответ /bind:\n' +
+                text.slice(
+                    0,
+                    1000
+                )
+            );
+        }
+
+
+        if (!data.success) {
+
+            throw new Error(
+                JSON.stringify(
+                    data,
+                    null,
+                    2
+                )
+            );
+        }
+
+
+        setStatus(
+            'ГОТОВО ✅\n\n' +
+
+            'Старые события сделок удалены.\n' +
+
+            'Подключены только:\n' +
+
+            '• ONCRMLEADADD\n' +
+
+            '• ONCRMLEADUPDATE\n\n' +
+
+            'Строковый ФО сделки приложение не изменяет.\n' +
+
+            'Большое поле сделки работает независимо.'
+        );
+
+    } finally {
+
+        bindBtn.disabled =
+            false;
+    }
+}
+
+
+BX24.init(
+    async function () {
+
+        try {
+
+            await loadSettings();
+
+
+            saveBtn.addEventListener(
+                'click',
+                async () => {
+
+                    saveBtn.disabled =
+                        true;
+
+
+                    try {
+
+                        await saveSettings();
+
+                    } catch (error) {
+
+                        setStatus(
+                            'Ошибка:\n' +
+                            String(
+                                error.message ||
+                                error
+                            )
+                        );
+
+                    } finally {
+
+                        saveBtn.disabled =
+                            false;
+                    }
+                }
+            );
+
+
+            bindBtn.addEventListener(
+                'click',
+                async () => {
+
+                    try {
+
+                        await runBind();
+
+                    } catch (error) {
+
+                        setStatus(
+                            'Ошибка:\n' +
+                            String(
+                                error.message ||
+                                error
+                            )
+                        );
+                    }
+                }
+            );
+
+        } catch (error) {
+
+            setStatus(
+                'Ошибка загрузки:\n' +
+                String(
+                    error.message ||
+                    error
+                )
+            );
+        }
+    }
+);
+
+</script>
+
+</body>
+</html>
