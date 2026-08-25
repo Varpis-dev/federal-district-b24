@@ -9,14 +9,14 @@ $input =
     );
 
 if (!is_array($input)) {
-    jsonResponse([
-        'success' => false,
-        'reason' => 'bad_input'
-    ]);
+    $input =
+        $_REQUEST;
 }
 
 $auth =
-    normalizeAuth($input);
+    normalizeAuth(
+        $input
+    );
 
 if (
     empty($auth['domain']) ||
@@ -28,32 +28,78 @@ if (
     ]);
 }
 
+
 $baseUrl =
     getBaseUrl();
 
 $fieldUrl =
-    $baseUrl . '/field';
+    $baseUrl .
+    '/field';
 
-$eventsUrl =
-    $baseUrl . '/events';
+$eventsBase =
+    $baseUrl .
+    '/events';
 
-$visualTypeId =
-    'fed_district_manager';
 
-$visualFieldName =
-    'UF_CRM_FEDERAL_DISTRICT_MANAGER';
+$optionsRes =
+    callBitrix(
+        'app.option.get',
+        [],
+        $auth
+    );
+
+if (
+    !empty(
+        $optionsRes['error']
+    )
+) {
+    jsonResponse([
+        'success' => false,
+        'reason' =>
+            'options_error',
+        'error' =>
+            $optionsRes
+    ]);
+}
+
+
+$options =
+    $optionsRes['result'] ??
+    [];
+
+$leadCityField =
+    $options['leadCityField'] ??
+    '';
+
+$leadRegionField =
+    $options['leadRegionField'] ??
+    '';
+
+
+if (!$leadCityField) {
+
+    jsonResponse([
+        'success' => false,
+        'reason' =>
+            'no_lead_city_field',
+        'message' =>
+            'Сначала выберите поле города лида и сохраните настройки.'
+    ]);
+}
+
 
 function getExistingField(
     $entity,
     $fieldName,
     $auth
 ) {
+
     $method =
         $entity === 'lead'
             ? 'crm.lead.userfield.list'
             : 'crm.deal.userfield.list';
 
-    $res =
+    $result =
         callBitrix(
             $method,
             [
@@ -67,16 +113,17 @@ function getExistingField(
 
     if (
         !empty(
-            $res['error']
+            $result['error']
         )
     ) {
         return [];
     }
 
     return
-        $res['result'] ??
+        $result['result'] ??
         [];
 }
+
 
 function createStringField(
     $entity,
@@ -84,6 +131,7 @@ function createStringField(
     $label,
     $auth
 ) {
+
     $existing =
         getExistingField(
             $entity,
@@ -92,17 +140,20 @@ function createStringField(
         );
 
     if (!empty($existing)) {
+
         return [
             'success' => true,
-            'already_exists' => true,
-            'field' => $existing
+            'already_exists' =>
+                true
         ];
     }
+
 
     $method =
         $entity === 'lead'
             ? 'crm.lead.userfield.add'
             : 'crm.deal.userfield.add';
+
 
     $result =
         callBitrix(
@@ -122,21 +173,20 @@ function createStringField(
                     'LIST_FILTER_LABEL' =>
                         $label,
 
-                    'HELP_MESSAGE' =>
-                        'Федеральный округ',
-
                     'USER_TYPE_ID' =>
                         'string',
 
-                    'XML_ID' =>
-                        $entity === 'lead'
-                            ? 'LEAD_FEDERAL_DISTRICT_TEXT'
-                            : 'DEAL_FEDERAL_DISTRICT_TEXT',
+                    'MULTIPLE' =>
+                        'N',
 
-                    'MULTIPLE' => 'N',
-                    'MANDATORY' => 'N',
-                    'SHOW_FILTER' => 'Y',
-                    'SORT' => 101,
+                    'MANDATORY' =>
+                        'N',
+
+                    'SHOW_FILTER' =>
+                        'Y',
+
+                    'SORT' =>
+                        101,
 
                     'SETTINGS' => [
                         'SIZE' => 30,
@@ -147,20 +197,67 @@ function createStringField(
             $auth
         );
 
+
     return [
         'success' =>
-            empty($result['error']),
+            empty(
+                $result['error']
+            ),
 
-        'already_exists' => false,
-        'result' => $result
+        'already_exists' =>
+            false,
+
+        'result' =>
+            $result
     ];
 }
 
+
 /*
- * =====================================================
- * РЕГИСТРИРУЕМ БОЛЬШОЙ ТИП ПОЛЯ
- * =====================================================
+ * ==================================================
+ * СТРОКОВОЕ ФО ЛИДА
+ * ==================================================
  */
+
+$leadString =
+    createStringField(
+        'lead',
+        LEAD_FED_FIELD,
+        'Федеральный округ',
+        $auth
+    );
+
+
+/*
+ * ==================================================
+ * СТРОКОВОЕ ФО СДЕЛКИ
+ *
+ * Только создаём.
+ * Приложение его НЕ ЗАПОЛНЯЕТ.
+ * ==================================================
+ */
+
+$dealString =
+    createStringField(
+        'deal',
+        DEAL_FED_FIELD,
+        'Федеральный округ (строка)',
+        $auth
+    );
+
+
+/*
+ * ==================================================
+ * БОЛЬШОЕ ВИЗУАЛЬНОЕ ПОЛЕ
+ * ==================================================
+ */
+
+$visualTypeId =
+    'fed_district_manager';
+
+$visualFieldName =
+    'UF_CRM_FEDERAL_DISTRICT_MANAGER';
+
 
 $typeResult =
     callBitrix(
@@ -176,20 +273,15 @@ $typeResult =
                 'Федеральный округ сделки',
 
             'DESCRIPTION' =>
-                'Определение федерального округа и менеджера по городу и области',
+                'Федеральный округ и менеджер',
 
             'OPTIONS' => [
-                'height' => 130
+                'height' => 150
             ]
         ],
         $auth
     );
 
-/*
- * =====================================================
- * БОЛЬШОЕ ПОЛЕ СДЕЛКИ
- * =====================================================
- */
 
 $appInfo =
     callBitrix(
@@ -198,23 +290,12 @@ $appInfo =
         $auth
     );
 
+
 $appId =
     $appInfo['result']['ID'] ??
     $appInfo['result']['APP_ID'] ??
     null;
 
-$possibleTypes = [];
-
-if ($appId) {
-    $possibleTypes[] =
-        'rest_' .
-        $appId .
-        '_' .
-        $visualTypeId;
-}
-
-$possibleTypes[] =
-    $visualTypeId;
 
 $visualExisting =
     getExistingField(
@@ -223,12 +304,29 @@ $visualExisting =
         $auth
     );
 
+
 $visualResult = [
     'already_exists' =>
         !empty($visualExisting)
 ];
 
+
 if (empty($visualExisting)) {
+
+    $possibleTypes = [];
+
+    if ($appId) {
+
+        $possibleTypes[] =
+            'rest_' .
+            $appId .
+            '_' .
+            $visualTypeId;
+    }
+
+    $possibleTypes[] =
+        $visualTypeId;
+
 
     foreach (
         $possibleTypes
@@ -256,24 +354,34 @@ if (empty($visualExisting)) {
                         'USER_TYPE_ID' =>
                             $actualType,
 
-                        'XML_ID' =>
-                            'FEDERAL_DISTRICT_MANAGER',
+                        'MULTIPLE' =>
+                            'N',
 
-                        'MULTIPLE' => 'N',
-                        'MANDATORY' => 'N',
-                        'SHOW_FILTER' => 'N',
-                        'SORT' => 100
+                        'MANDATORY' =>
+                            'N',
+
+                        'SHOW_FILTER' =>
+                            'N',
+
+                        'SORT' =>
+                            100
                     ]
                 ],
                 $auth
             );
 
+
         $visualResult = [
-            'already_exists' => false,
-            'used_type' =>
+            'already_exists' =>
+                false,
+
+            'type' =>
                 $actualType,
-            'result' => $add
+
+            'result' =>
+                $add
         ];
+
 
         if (
             empty($add['error']) &&
@@ -284,107 +392,131 @@ if (empty($visualExisting)) {
     }
 }
 
+
 /*
- * =====================================================
- * СТРОКОВОЕ ПОЛЕ ЛИДА
- * =====================================================
+ * ==================================================
+ * УДАЛЯЕМ ВСЕ СТАРЫЕ НАШИ EVENTS
+ * ==================================================
  */
 
-$leadString =
-    createStringField(
-        'lead',
-        LEAD_FED_FIELD,
-        'Федеральный округ',
+$eventGet =
+    callBitrix(
+        'event.get',
+        [],
         $auth
     );
 
+
+$removedEvents = [];
+
+
+if (
+    empty(
+        $eventGet['error']
+    )
+) {
+
+    foreach (
+        $eventGet['result'] ?? []
+        as $handler
+    ) {
+
+        $eventName =
+            strtoupper(
+                $handler['event'] ??
+                $handler['EVENT'] ??
+                ''
+            );
+
+        $handlerUrl =
+            $handler['handler'] ??
+            $handler['HANDLER'] ??
+            '';
+
+
+        $isOurHandler =
+            strpos(
+                $handlerUrl,
+                $eventsBase
+            ) === 0;
+
+
+        $isRelevantEvent =
+            in_array(
+                $eventName,
+                [
+                    'ONCRMLEADADD',
+                    'ONCRMLEADUPDATE',
+                    'ONCRMDEALADD',
+                    'ONCRMDEALUPDATE'
+                ],
+                true
+            );
+
+
+        if (
+            !$isOurHandler ||
+            !$isRelevantEvent
+        ) {
+            continue;
+        }
+
+
+        $unbind =
+            callBitrix(
+                'event.unbind',
+                [
+                    'event' =>
+                        $eventName,
+
+                    'handler' =>
+                        $handlerUrl
+                ],
+                $auth
+            );
+
+
+        $removedEvents[] = [
+            'event' =>
+                $eventName,
+
+            'handler' =>
+                $handlerUrl,
+
+            'result' =>
+                $unbind
+        ];
+    }
+}
+
+
 /*
- * =====================================================
- * СТРОКОВОЕ ПОЛЕ СДЕЛКИ
+ * ==================================================
+ * НОВЫЙ ОПТИМИЗИРОВАННЫЙ HANDLER
  *
- * Только создаём.
- * Приложение его НЕ заполняет.
- * Потом используешь БП.
- * =====================================================
+ * В URL передаём коды полей.
+ * events.js больше не делает app.option.get
+ * на каждый лид.
+ * ==================================================
  */
 
-$dealString =
-    createStringField(
-        'deal',
-        DEAL_FED_FIELD,
-        'Федеральный округ (строка)',
-        $auth
+$handlerUrl =
+    $eventsBase .
+    '?city=' .
+    rawurlencode(
+        $leadCityField
     );
 
-/*
- * =====================================================
- * УБИРАЕМ СТАРЫЕ СОБЫТИЯ СДЕЛОК
- * =====================================================
- */
 
-$unbindDealAdd =
-    callBitrix(
-        'event.unbind',
-        [
-            'event' =>
-                'ONCRMDEALADD',
+if ($leadRegionField) {
 
-            'handler' =>
-                $eventsUrl
-        ],
-        $auth
-    );
+    $handlerUrl .=
+        '&region=' .
+        rawurlencode(
+            $leadRegionField
+        );
+}
 
-$unbindDealUpdate =
-    callBitrix(
-        'event.unbind',
-        [
-            'event' =>
-                'ONCRMDEALUPDATE',
-
-            'handler' =>
-                $eventsUrl
-        ],
-        $auth
-    );
-
-/*
- * Чтобы повторное нажатие кнопки
- * не плодило подписки — сначала
- * снимаем подписки лидов.
- */
-
-$unbindLeadAdd =
-    callBitrix(
-        'event.unbind',
-        [
-            'event' =>
-                'ONCRMLEADADD',
-
-            'handler' =>
-                $eventsUrl
-        ],
-        $auth
-    );
-
-$unbindLeadUpdate =
-    callBitrix(
-        'event.unbind',
-        [
-            'event' =>
-                'ONCRMLEADUPDATE',
-
-            'handler' =>
-                $eventsUrl
-        ],
-        $auth
-    );
-
-/*
- * =====================================================
- * ПОДКЛЮЧАЕМ ТОЛЬКО ЛИДЫ
- * =====================================================
- */
 
 $bindLeadAdd =
     callBitrix(
@@ -394,10 +526,11 @@ $bindLeadAdd =
                 'ONCRMLEADADD',
 
             'handler' =>
-                $eventsUrl
+                $handlerUrl
         ],
         $auth
     );
+
 
 $bindLeadUpdate =
     callBitrix(
@@ -407,16 +540,20 @@ $bindLeadUpdate =
                 'ONCRMLEADUPDATE',
 
             'handler' =>
-                $eventsUrl
+                $handlerUrl
         ],
         $auth
     );
+
 
 jsonResponse([
     'success' => true,
 
     'message' =>
-        'Поля проверены/созданы. Подключены только события лидов.',
+        'Оптимизированная версия подключена.',
+
+    'handler' =>
+        $handlerUrl,
 
     'fields' => [
         'lead_string' =>
@@ -425,38 +562,21 @@ jsonResponse([
         'deal_string' =>
             $dealString,
 
-        'deal_visual' =>
+        'visual' =>
             $visualResult
     ],
 
     'events' => [
-        'handler' =>
-            $eventsUrl,
+        'removed_old' =>
+            $removedEvents,
 
         'lead_add' =>
             $bindLeadAdd,
 
         'lead_update' =>
-            $bindLeadUpdate,
-
-        'deal_add_removed' =>
-            $unbindDealAdd,
-
-        'deal_update_removed' =>
-            $unbindDealUpdate
-    ],
-
-    'field_codes' => [
-        'lead_string' =>
-            LEAD_FED_FIELD,
-
-        'deal_string' =>
-            DEAL_FED_FIELD,
-
-        'deal_visual' =>
-            $visualFieldName
+            $bindLeadUpdate
     ],
 
     'important' =>
-        'Приложение НЕ переносит и НЕ меняет строковый ФО сделки.'
+        'События сделок отключены. Приложение автоматически изменяет только строковый ФО лида.'
 ]);
