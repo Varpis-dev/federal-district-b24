@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/common.php';
 
+
 $input =
     json_decode(
         file_get_contents('php://input'),
@@ -9,19 +10,21 @@ $input =
     );
 
 if (!is_array($input)) {
-    $input =
-        $_REQUEST;
+    $input = $_REQUEST;
 }
+
 
 $auth =
     normalizeAuth(
         $input
     );
 
+
 if (
     empty($auth['domain']) ||
     empty($auth['access_token'])
 ) {
+
     jsonResponse([
         'success' => false,
         'reason' => 'no_auth'
@@ -32,14 +35,22 @@ if (
 $baseUrl =
     getBaseUrl();
 
+
 $fieldUrl =
     $baseUrl .
     '/field';
+
 
 $eventsBase =
     $baseUrl .
     '/events';
 
+
+/*
+ * ============================================================
+ * НАСТРОЙКИ
+ * ============================================================
+ */
 
 $optionsRes =
     callBitrix(
@@ -48,17 +59,17 @@ $optionsRes =
         $auth
     );
 
+
 if (
     !empty(
         $optionsRes['error']
     )
 ) {
+
     jsonResponse([
         'success' => false,
-        'reason' =>
-            'options_error',
-        'error' =>
-            $optionsRes
+        'reason' => 'options_error',
+        'error' => $optionsRes
     ]);
 }
 
@@ -67,9 +78,11 @@ $options =
     $optionsRes['result'] ??
     [];
 
+
 $leadCityField =
     $options['leadCityField'] ??
     '';
+
 
 $leadRegionField =
     $options['leadRegionField'] ??
@@ -80,13 +93,21 @@ if (!$leadCityField) {
 
     jsonResponse([
         'success' => false,
+
         'reason' =>
             'no_lead_city_field',
+
         'message' =>
             'Сначала выберите поле города лида и сохраните настройки.'
     ]);
 }
 
+
+/*
+ * ============================================================
+ * ПОИСК ПОЛЯ
+ * ============================================================
+ */
 
 function getExistingField(
     $entity,
@@ -98,6 +119,7 @@ function getExistingField(
         $entity === 'lead'
             ? 'crm.lead.userfield.list'
             : 'crm.deal.userfield.list';
+
 
     $result =
         callBitrix(
@@ -111,19 +133,28 @@ function getExistingField(
             $auth
         );
 
+
     if (
         !empty(
             $result['error']
         )
     ) {
+
         return [];
     }
+
 
     return
         $result['result'] ??
         [];
 }
 
+
+/*
+ * ============================================================
+ * СОЗДАНИЕ СТРОКОВОГО ПОЛЯ
+ * ============================================================
+ */
 
 function createStringField(
     $entity,
@@ -139,10 +170,13 @@ function createStringField(
             $auth
         );
 
+
     if (!empty($existing)) {
 
         return [
-            'success' => true,
+            'success' =>
+                true,
+
             'already_exists' =>
                 true
         ];
@@ -185,12 +219,18 @@ function createStringField(
                     'SHOW_FILTER' =>
                         'Y',
 
+                    'EDIT_IN_LIST' =>
+                        'Y',
+
                     'SORT' =>
                         101,
 
                     'SETTINGS' => [
-                        'SIZE' => 30,
-                        'ROWS' => 1
+                        'SIZE' =>
+                            30,
+
+                        'ROWS' =>
+                            1
                     ]
                 ]
             ],
@@ -214,55 +254,78 @@ function createStringField(
 
 
 /*
- * ==================================================
- * СТРОКОВОЕ ФО ЛИДА
- * ==================================================
+ * ============================================================
+ * СТРОКОВОЕ ПОЛЕ ЛИДА
+ * ============================================================
  */
 
 $leadString =
     createStringField(
         'lead',
+
         LEAD_FED_FIELD,
+
         'Федеральный округ',
+
         $auth
     );
 
 
 /*
- * ==================================================
- * СТРОКОВОЕ ФО СДЕЛКИ
+ * ============================================================
+ * СТРОКОВОЕ ПОЛЕ СДЕЛКИ
  *
  * Только создаём.
- * Приложение его НЕ ЗАПОЛНЯЕТ.
- * ==================================================
+ * Приложение его НЕ заполняет.
+ * Потом переносим через БП.
+ * ============================================================
  */
 
 $dealString =
     createStringField(
         'deal',
+
         DEAL_FED_FIELD,
+
         'Федеральный округ (строка)',
+
         $auth
     );
 
 
 /*
- * ==================================================
+ * ============================================================
  * БОЛЬШОЕ ВИЗУАЛЬНОЕ ПОЛЕ
- * ==================================================
+ * ============================================================
  */
 
 $visualTypeId =
     'fed_district_manager';
 
+
 $visualFieldName =
     'UF_CRM_FEDERAL_DISTRICT_MANAGER';
 
 
-$typeResult =
+/*
+ * ВАЖНО:
+ *
+ * Сначала UPDATE.
+ *
+ * Благодаря этому уже существующее поле,
+ * которое раньше смотрело на старый Vercel,
+ * переключится на:
+ *
+ * https://federal-district-b24-xi.vercel.app/field
+ *
+ * Само поле удалять не надо.
+ */
+
+$typeUpdate =
     callBitrix(
-        'userfieldtype.add',
+        'userfieldtype.update',
         [
+
             'USER_TYPE_ID' =>
                 $visualTypeId,
 
@@ -273,15 +336,101 @@ $typeResult =
                 'Федеральный округ сделки',
 
             'DESCRIPTION' =>
-                'Федеральный округ и менеджер',
+                'Федеральный округ и менеджер по городу и области сделки',
 
             'OPTIONS' => [
-                'height' => 150
+                'height' =>
+                    150
             ]
         ],
         $auth
     );
 
+
+$typeAction =
+    'updated';
+
+
+/*
+ * Если типа ещё нет —
+ * создаём его.
+ */
+
+if (
+    !empty(
+        $typeUpdate['error']
+    )
+) {
+
+    $typeAdd =
+        callBitrix(
+            'userfieldtype.add',
+            [
+
+                'USER_TYPE_ID' =>
+                    $visualTypeId,
+
+                'HANDLER' =>
+                    $fieldUrl,
+
+                'TITLE' =>
+                    'Федеральный округ сделки',
+
+                'DESCRIPTION' =>
+                    'Федеральный округ и менеджер по городу и области сделки',
+
+                'OPTIONS' => [
+                    'height' =>
+                        150
+                ]
+            ],
+            $auth
+        );
+
+
+    if (
+        empty(
+            $typeAdd['error']
+        )
+    ) {
+
+        $typeResult =
+            $typeAdd;
+
+        $typeAction =
+            'created';
+
+    } else {
+
+        jsonResponse([
+            'success' => false,
+
+            'reason' =>
+                'visual_type_error',
+
+            'field_handler' =>
+                $fieldUrl,
+
+            'update_error' =>
+                $typeUpdate,
+
+            'add_error' =>
+                $typeAdd
+        ]);
+    }
+
+} else {
+
+    $typeResult =
+        $typeUpdate;
+}
+
+
+/*
+ * ============================================================
+ * APP ID
+ * ============================================================
+ */
 
 $appInfo =
     callBitrix(
@@ -291,11 +440,31 @@ $appInfo =
     );
 
 
+if (
+    !empty(
+        $appInfo['error']
+    )
+) {
+
+    jsonResponse([
+        'success' => false,
+        'reason' => 'app_info_error',
+        'error' => $appInfo
+    ]);
+}
+
+
 $appId =
     $appInfo['result']['ID'] ??
     $appInfo['result']['APP_ID'] ??
     null;
 
+
+/*
+ * ============================================================
+ * ПРОВЕРЯЕМ СУЩЕСТВОВАНИЕ БОЛЬШОГО ПОЛЯ
+ * ============================================================
+ */
 
 $visualExisting =
     getExistingField(
@@ -306,14 +475,28 @@ $visualExisting =
 
 
 $visualResult = [
+
     'already_exists' =>
-        !empty($visualExisting)
+        !empty(
+            $visualExisting
+        )
 ];
 
 
-if (empty($visualExisting)) {
+/*
+ * Если самого поля вдруг нет —
+ * создаём.
+ */
 
-    $possibleTypes = [];
+if (
+    empty(
+        $visualExisting
+    )
+) {
+
+    $possibleTypes =
+        [];
+
 
     if ($appId) {
 
@@ -323,6 +506,7 @@ if (empty($visualExisting)) {
             '_' .
             $visualTypeId;
     }
+
 
     $possibleTypes[] =
         $visualTypeId;
@@ -337,6 +521,7 @@ if (empty($visualExisting)) {
             callBitrix(
                 'crm.deal.userfield.add',
                 [
+
                     'fields' => [
 
                         'FIELD_NAME' =>
@@ -372,6 +557,7 @@ if (empty($visualExisting)) {
 
 
         $visualResult = [
+
             'already_exists' =>
                 false,
 
@@ -384,9 +570,14 @@ if (empty($visualExisting)) {
 
 
         if (
-            empty($add['error']) &&
-            isset($add['result'])
+            empty(
+                $add['error']
+            ) &&
+            isset(
+                $add['result']
+            )
         ) {
+
             break;
         }
     }
@@ -394,9 +585,21 @@ if (empty($visualExisting)) {
 
 
 /*
- * ==================================================
- * УДАЛЯЕМ ВСЕ СТАРЫЕ НАШИ EVENTS
- * ==================================================
+ * ============================================================
+ * УДАЛЯЕМ СТАРЫЕ СОБЫТИЯ
+ *
+ * ВАЖНО:
+ * здесь НЕТ проверки старого домена.
+ *
+ * Удаляем все обработчики ЭТОГО приложения
+ * для четырёх событий.
+ *
+ * Таким образом удалятся и:
+ *
+ * старый paused Vercel
+ * новый Vercel
+ * возможные дубли
+ * ============================================================
  */
 
 $eventGet =
@@ -407,7 +610,20 @@ $eventGet =
     );
 
 
-$removedEvents = [];
+$removedEvents =
+    [];
+
+
+$relevantEvents = [
+
+    'ONCRMLEADADD',
+
+    'ONCRMLEADUPDATE',
+
+    'ONCRMDEALADD',
+
+    'ONCRMDEALUPDATE'
+];
 
 
 if (
@@ -423,41 +639,35 @@ if (
 
         $eventName =
             strtoupper(
-                $handler['event'] ??
-                $handler['EVENT'] ??
-                ''
+                (string)(
+                    $handler['event'] ??
+                    $handler['EVENT'] ??
+                    ''
+                )
             );
 
+
         $handlerUrl =
-            $handler['handler'] ??
-            $handler['HANDLER'] ??
-            '';
-
-
-        $isOurHandler =
-            strpos(
-                $handlerUrl,
-                $eventsBase
-            ) === 0;
-
-
-        $isRelevantEvent =
-            in_array(
-                $eventName,
-                [
-                    'ONCRMLEADADD',
-                    'ONCRMLEADUPDATE',
-                    'ONCRMDEALADD',
-                    'ONCRMDEALUPDATE'
-                ],
-                true
+            (string)(
+                $handler['handler'] ??
+                $handler['HANDLER'] ??
+                ''
             );
 
 
         if (
-            !$isOurHandler ||
-            !$isRelevantEvent
+            !in_array(
+                $eventName,
+                $relevantEvents,
+                true
+            )
         ) {
+
+            continue;
+        }
+
+
+        if (!$handlerUrl) {
             continue;
         }
 
@@ -466,6 +676,7 @@ if (
             callBitrix(
                 'event.unbind',
                 [
+
                     'event' =>
                         $eventName,
 
@@ -477,6 +688,7 @@ if (
 
 
         $removedEvents[] = [
+
             'event' =>
                 $eventName,
 
@@ -491,13 +703,13 @@ if (
 
 
 /*
- * ==================================================
- * НОВЫЙ ОПТИМИЗИРОВАННЫЙ HANDLER
+ * ============================================================
+ * НОВЫЙ EVENT HANDLER
  *
- * В URL передаём коды полей.
- * events.js больше не делает app.option.get
- * на каждый лид.
- * ==================================================
+ * Коды города/области передаём в query.
+ * Поэтому events.js не делает app.option.get
+ * на каждом изменении лида.
+ * ============================================================
  */
 
 $handlerUrl =
@@ -518,10 +730,17 @@ if ($leadRegionField) {
 }
 
 
+/*
+ * ============================================================
+ * ПОДПИСЫВАЕМ ТОЛЬКО ЛИДЫ
+ * ============================================================
+ */
+
 $bindLeadAdd =
     callBitrix(
         'event.bind',
         [
+
             'event' =>
                 'ONCRMLEADADD',
 
@@ -536,6 +755,7 @@ $bindLeadUpdate =
     callBitrix(
         'event.bind',
         [
+
             'event' =>
                 'ONCRMLEADUPDATE',
 
@@ -546,29 +766,59 @@ $bindLeadUpdate =
     );
 
 
+/*
+ * ============================================================
+ * ОТВЕТ
+ * ============================================================
+ */
+
 jsonResponse([
-    'success' => true,
+
+    'success' =>
+        true,
 
     'message' =>
-        'Оптимизированная версия подключена.',
+        'Федеральные округа подключены к новому Vercel.',
 
-    'handler' =>
-        $handlerUrl,
+
+    'domain' =>
+        $baseUrl,
+
+
+    'visual_field_handler' =>
+        $fieldUrl,
+
+
+    'visual_type' => [
+
+        'action' =>
+            $typeAction,
+
+        'result' =>
+            $typeResult
+    ],
+
 
     'fields' => [
+
         'lead_string' =>
             $leadString,
 
         'deal_string' =>
             $dealString,
 
-        'visual' =>
+        'deal_visual' =>
             $visualResult
     ],
 
+
     'events' => [
+
         'removed_old' =>
             $removedEvents,
+
+        'new_handler' =>
+            $handlerUrl,
 
         'lead_add' =>
             $bindLeadAdd,
@@ -577,6 +827,7 @@ jsonResponse([
             $bindLeadUpdate
     ],
 
+
     'important' =>
-        'События сделок отключены. Приложение автоматически изменяет только строковый ФО лида.'
+        'События сделок удалены. Автоматически заполняется только строковый ФО лида. Большое поле сделки рассчитывает ФО независимо.'
 ]);
