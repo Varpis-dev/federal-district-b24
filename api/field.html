@@ -1,10 +1,3 @@
-<?php
-
-header(
-    'Content-Type: text/html; charset=utf-8'
-);
-
-?>
 <!DOCTYPE html>
 <html lang="ru">
 
@@ -17,6 +10,7 @@ header(
 </title>
 
 <script src="https://api.bitrix24.com/api/v1/"></script>
+<script src="/district.js"></script>
 
 <style>
 
@@ -24,30 +18,18 @@ html,
 body {
     margin: 0;
     padding: 0;
-
     background: transparent;
-
     overflow: hidden;
-
-    font-family:
-        Arial,
-        sans-serif;
+    font-family: Arial, sans-serif;
 }
 
 .wrap {
     box-sizing: border-box;
-
     width: 100%;
-
-    padding:
-        12px
-        14px;
+    padding: 12px 14px;
 
     border-radius: 16px;
-
-    border:
-        1px solid
-        #d7e3f5;
+    border: 1px solid #d7e3f5;
 
     background:
         linear-gradient(
@@ -58,101 +40,69 @@ body {
 
     box-shadow:
         0 4px 14px
-        rgba(
-            24,
-            91,
-            170,
-            .08
-        );
+        rgba(24, 91, 170, .08);
 }
 
 .label {
     margin-bottom: 6px;
 
     font-size: 12px;
+    font-weight: 700;
 
     color: #7b8794;
 
-    font-weight: 700;
-
-    text-transform:
-        uppercase;
-
-    letter-spacing:
-        .04em;
+    text-transform: uppercase;
+    letter-spacing: .04em;
 }
 
 .main {
     margin-bottom: 8px;
 
     font-size: 24px;
-
     line-height: 1.1;
 
     font-weight: 800;
-
     color: #111827;
 }
 
 .manager {
     display: inline-flex;
-
     align-items: center;
 
-    padding:
-        5px
-        9px;
+    margin-bottom: 8px;
 
-    border-radius:
-        999px;
+    padding: 5px 9px;
 
-    background:
-        #e8f1ff;
+    border-radius: 999px;
 
-    color:
-        #1456a3;
+    background: #e8f1ff;
 
-    font-size:
-        13px;
+    color: #1456a3;
 
-    font-weight:
-        700;
-
-    margin-bottom:
-        8px;
+    font-size: 13px;
+    font-weight: 700;
 }
 
 .place {
-    font-size:
-        13px;
+    font-size: 13px;
+    line-height: 1.3;
 
-    color:
-        #4b5563;
+    color: #4b5563;
 
-    line-height:
-        1.3;
-
-    font-weight:
-        600;
+    font-weight: 600;
 }
 
 .small {
-    margin-top:
-        6px;
+    margin-top: 6px;
 
-    font-size:
-        12px;
+    font-size: 12px;
+    line-height: 1.35;
 
-    color:
-        #7b8794;
-
-    line-height:
-        1.35;
+    color: #7b8794;
 }
 
 .warn {
-    border-color:
-        #f1d48a;
+    border-color: #f1d48a;
 
     background:
         linear-gradient(
@@ -163,13 +113,11 @@ body {
 }
 
 .warn .main {
-    color:
-        #9a6a00;
+    color: #9a6a00;
 }
 
 .bad {
-    border-color:
-        #efb7b3;
+    border-color: #efb7b3;
 
     background:
         linear-gradient(
@@ -180,8 +128,7 @@ body {
 }
 
 .bad .main {
-    color:
-        #d92d20;
+    color: #d92d20;
 }
 
 </style>
@@ -195,61 +142,36 @@ body {
     id="wrap"
 >
 
-<div class="label">
-Федеральный округ
-</div>
+    <div class="label">
+        Федеральный округ
+    </div>
 
-<div
-    class="main"
-    id="main"
->
-Загрузка...
-</div>
+    <div
+        class="main"
+        id="main"
+    >
+        Загрузка...
+    </div>
 
-<div
-    class="manager"
-    id="manager"
-    style="display:none;"
-></div>
+    <div
+        class="manager"
+        id="manager"
+        style="display:none;"
+    ></div>
 
-<div
-    class="place"
-    id="place"
-></div>
+    <div
+        class="place"
+        id="place"
+    ></div>
 
-<div
-    class="small"
-    id="small"
-></div>
+    <div
+        class="small"
+        id="small"
+    ></div>
 
 </div>
 
 <script>
-
-const wrapEl =
-    document.getElementById(
-        'wrap'
-    );
-
-const mainEl =
-    document.getElementById(
-        'main'
-    );
-
-const managerEl =
-    document.getElementById(
-        'manager'
-    );
-
-const placeEl =
-    document.getElementById(
-        'place'
-    );
-
-const smallEl =
-    document.getElementById(
-        'small'
-    );
 
 const DEFAULT_MANAGERS = {
 
@@ -278,16 +200,43 @@ const DEFAULT_MANAGERS = {
         'Людмила'
 };
 
+
+const wrapEl =
+    document.getElementById(
+        'wrap'
+    );
+
+const mainEl =
+    document.getElementById(
+        'main'
+    );
+
+const managerEl =
+    document.getElementById(
+        'manager'
+    );
+
+const placeEl =
+    document.getElementById(
+        'place'
+    );
+
+const smallEl =
+    document.getElementById(
+        'small'
+    );
+
+
 function bxCall(
     method,
     params = {},
-    timeout = 15000
+    timeoutMs = 15000
 ) {
+
     return new Promise(
         (resolve, reject) => {
 
-            let finished =
-                false;
+            let finished = false;
 
             const timer =
                 setTimeout(
@@ -295,8 +244,7 @@ function bxCall(
 
                         if (!finished) {
 
-                            finished =
-                                true;
+                            finished = true;
 
                             reject(
                                 new Error(
@@ -307,20 +255,20 @@ function bxCall(
                         }
 
                     },
-                    timeout
+                    timeoutMs
                 );
+
 
             BX24.callMethod(
                 method,
                 params,
-                function(res) {
+                function (res) {
 
                     if (finished) {
                         return;
                     }
 
-                    finished =
-                        true;
+                    finished = true;
 
                     clearTimeout(
                         timer
@@ -330,16 +278,15 @@ function bxCall(
 
                         reject(
                             new Error(
-                                'Пустой ответ'
+                                'Пустой ответ ' +
+                                method
                             )
                         );
 
                         return;
                     }
 
-                    if (
-                        res.error()
-                    ) {
+                    if (res.error()) {
 
                         reject(
                             new Error(
@@ -361,119 +308,12 @@ function bxCall(
     );
 }
 
-function getFieldEnumItems(
-    fieldMeta
-) {
-    if (!fieldMeta) {
-        return [];
-    }
-
-    return (
-        fieldMeta.items ||
-        fieldMeta.ITEMS ||
-        fieldMeta.list ||
-        fieldMeta.LIST ||
-        fieldMeta.values ||
-        fieldMeta.VALUES ||
-        []
-    );
-}
-
-function parseFieldValue(
-    rawValue,
-    fieldCode,
-    fieldsMeta
-) {
-    if (
-        Array.isArray(
-            rawValue
-        )
-    ) {
-        rawValue =
-            rawValue[0] ||
-            '';
-    }
-
-    if (
-        typeof rawValue ===
-            'object' &&
-        rawValue !== null
-    ) {
-        rawValue =
-            rawValue.VALUE ||
-            rawValue.value ||
-            rawValue.ID ||
-            rawValue.id ||
-            '';
-    }
-
-    let value =
-        rawValue ||
-        '';
-
-    const fieldMeta =
-        fieldsMeta
-            ? fieldsMeta[fieldCode]
-            : null;
-
-    const items =
-        getFieldEnumItems(
-            fieldMeta
-        );
-
-    if (
-        items &&
-        items.length
-    ) {
-        const found =
-            items.find(
-                item => {
-
-                    const id =
-                        String(
-                            item.ID ||
-                            item.id ||
-                            item.VALUE_ID ||
-                            item.valueId ||
-                            ''
-                        );
-
-                    const val =
-                        String(
-                            item.VALUE ||
-                            item.value ||
-                            item.NAME ||
-                            item.name ||
-                            ''
-                        );
-
-                    return (
-                        id ===
-                            String(value) ||
-                        val ===
-                            String(value)
-                    );
-                }
-            );
-
-        if (found) {
-            return (
-                found.VALUE ||
-                found.value ||
-                found.NAME ||
-                found.name ||
-                value
-            );
-        }
-    }
-
-    return value;
-}
 
 function getManager(
     options,
-    key
+    districtKey
 ) {
+
     const managers = {
 
         central:
@@ -511,10 +351,11 @@ function getManager(
     };
 
     return (
-        managers[key] ||
+        managers[districtKey] ||
         ''
     );
 }
+
 
 function renderOk(
     district,
@@ -523,6 +364,7 @@ function renderOk(
     region,
     source
 ) {
+
     wrapEl.className =
         'wrap';
 
@@ -533,6 +375,7 @@ function renderOk(
               manager +
               ')'
             : district;
+
 
     if (manager) {
 
@@ -549,6 +392,7 @@ function renderOk(
             'none';
     }
 
+
     placeEl.textContent =
         region
             ? city +
@@ -556,15 +400,18 @@ function renderOk(
               region
             : city;
 
+
     smallEl.textContent =
         source === 'region'
             ? 'Округ определён по области/региону'
             : 'Округ определён по городу';
 }
 
+
 function renderNeedRegion(
     city
 ) {
+
     wrapEl.className =
         'wrap warn';
 
@@ -581,34 +428,12 @@ function renderNeedRegion(
         'Для этого города нужна область для точного определения округа.';
 }
 
-function renderUnknown(
-    city,
-    region
-) {
-    wrapEl.className =
-        'wrap bad';
-
-    mainEl.textContent =
-        'Округ не определён';
-
-    managerEl.style.display =
-        'none';
-
-    placeEl.textContent =
-        region
-            ? city +
-              ', ' +
-              region
-            : city;
-
-    smallEl.textContent =
-        'Проверьте город и область сделки.';
-}
 
 function renderError(
     title,
-    message
+    text
 ) {
+
     wrapEl.className =
         'wrap bad';
 
@@ -622,22 +447,24 @@ function renderError(
         '';
 
     smallEl.textContent =
-        message || '';
+        text || '';
 }
 
+
 BX24.init(
-    async function() {
+    async function () {
 
         try {
 
-            const info =
+            const placementInfo =
                 BX24.placement.info();
 
             const placement =
-                info &&
-                info.options
-                    ? info.options
+                placementInfo &&
+                placementInfo.options
+                    ? placementInfo.options
                     : {};
+
 
             const dealId =
                 placement
@@ -650,8 +477,7 @@ BX24.init(
                 placement.DEAL_ID ||
 
                 (
-                    placement
-                        .ENTITY_DATA &&
+                    placement.ENTITY_DATA &&
                     (
                         placement
                             .ENTITY_DATA
@@ -665,6 +491,7 @@ BX24.init(
 
                 null;
 
+
             if (!dealId) {
 
                 renderError(
@@ -675,29 +502,37 @@ BX24.init(
                 return;
             }
 
+
+            /*
+             * Эти вызовы выполняются
+             * ИЗ БРАУЗЕРА напрямую в Bitrix.
+             *
+             * Vercel Function здесь нет.
+             */
             const [
                 options,
                 deal,
                 fields
             ] =
                 await Promise.all([
+
                     bxCall(
-                        'app.option.get',
-                        {}
+                        'app.option.get'
                     ),
 
                     bxCall(
                         'crm.deal.get',
                         {
-                            id: dealId
+                            id:
+                                dealId
                         }
                     ),
 
                     bxCall(
-                        'crm.deal.fields',
-                        {}
+                        'crm.deal.fields'
                     )
                 ]);
+
 
             const cityField =
                 options.dealCityField ||
@@ -706,6 +541,7 @@ BX24.init(
             const regionField =
                 options.dealRegionField ||
                 '';
+
 
             if (!cityField) {
 
@@ -717,23 +553,34 @@ BX24.init(
                 return;
             }
 
+
             const city =
-                parseFieldValue(
-                    deal[cityField],
-                    cityField,
-                    fields
-                );
+                FederalDistrict
+                    .parseFieldValue(
+                        deal[
+                            cityField
+                        ],
+
+                        fields[
+                            cityField
+                        ]
+                    );
+
 
             const region =
                 regionField
-                    ? parseFieldValue(
-                        deal[
-                            regionField
-                        ],
-                        regionField,
-                        fields
-                    )
+                    ? FederalDistrict
+                        .parseFieldValue(
+                            deal[
+                                regionField
+                            ],
+
+                            fields[
+                                regionField
+                            ]
+                        )
                     : '';
+
 
             if (!city) {
 
@@ -745,41 +592,20 @@ BX24.init(
                 return;
             }
 
+
             /*
-             * ВАЖНО:
-             * большое поле НЕ ЧИТАЕТ
-             * строковое поле ФО.
+             * НИКАКОГО /calc.
              *
-             * Оно каждый раз считает
-             * ФО по город + область.
+             * Расчёт выполняется
+             * прямо в браузере.
              */
-
-            const response =
-                await fetch(
-                    '/calc',
-                    {
-                        method:
-                            'POST',
-
-                        headers: {
-                            'Content-Type':
-                                'application/json'
-                        },
-
-                        body:
-                            JSON.stringify({
-                                city,
-                                region
-                            })
-                    }
-                );
-
-            const data =
-                await response.json();
-
             const result =
-                data.result ||
-                {};
+                FederalDistrict
+                    .calcDistrictName(
+                        city,
+                        region
+                    );
+
 
             if (
                 result.status ===
@@ -793,24 +619,41 @@ BX24.init(
                 return;
             }
 
+
             if (
                 result.status !== 'ok' ||
                 !result.districtName
             ) {
 
-                renderUnknown(
-                    city,
+                wrapEl.className =
+                    'wrap bad';
+
+                mainEl.textContent =
+                    'Округ не определён';
+
+                managerEl.style.display =
+                    'none';
+
+                placeEl.textContent =
                     region
-                );
+                        ? city +
+                          ', ' +
+                          region
+                        : city;
+
+                smallEl.textContent =
+                    'Проверьте город и область сделки.';
 
                 return;
             }
+
 
             const manager =
                 getManager(
                     options,
                     result.districtKey
                 );
+
 
             renderOk(
                 result.districtName,
@@ -820,18 +663,21 @@ BX24.init(
                 result.source
             );
 
+
             if (
-                window.BX24 &&
                 BX24.fitWindow
             ) {
                 BX24.fitWindow();
             }
 
-        } catch (e) {
+        } catch (error) {
 
             renderError(
                 'Ошибка загрузки',
-                'Обновите карточку сделки.'
+                String(
+                    error.message ||
+                    error
+                )
             );
         }
     }
@@ -840,5 +686,4 @@ BX24.init(
 </script>
 
 </body>
-
 </html>
