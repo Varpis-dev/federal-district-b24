@@ -26,7 +26,7 @@ if (
 $baseUrl = getBaseUrl();
 
 $fieldUrl =
-    $baseUrl . '/field';
+    $baseUrl . '/field-v2';
 
 $eventsBase =
     $baseUrl . '/events';
