@@ -1,21 +1,60 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+
   "functions": {
     "api/*.php": {
       "runtime": "vercel-php@0.7.3"
+    },
+
+    "api/events.js": {
+      "maxDuration": 15
     }
   },
+
   "routes": [
-    { "src": "/", "dest": "/api/settings.php" },
-    { "src": "/install", "dest": "/api/install.php" },
-    { "src": "/settings", "dest": "/api/settings.php" },
-    { "src": "/field", "dest": "/api/field.php" },
-    { "src": "/bind", "dest": "/api/bind.php" },
-    { "src": "/events", "dest": "/api/events.php" },
-    { "src": "/calc", "dest": "/api/calc.php" },
-    { "src": "/recalc-leads", "dest": "/api/recalc-leads.php" },
-    { "src": "/contact", "dest": "/api/contact.php" },
-    { "src": "/license", "dest": "/api/license.php" },
-    { "src": "/privacy", "dest": "/api/privacy.php" }
+    {
+      "src": "/",
+      "dest": "/settings.html"
+    },
+
+    {
+      "src": "/settings",
+      "dest": "/settings.html"
+    },
+
+    {
+      "src": "/field",
+      "dest": "/field.html"
+    },
+
+    {
+      "src": "/install",
+      "dest": "/api/install.php"
+    },
+
+    {
+      "src": "/bind",
+      "dest": "/api/bind.php"
+    },
+
+    {
+      "src": "/events",
+      "dest": "/api/events.js"
+    },
+
+    {
+      "src": "/contact",
+      "dest": "/api/contact.php"
+    },
+
+    {
+      "src": "/license",
+      "dest": "/api/license.php"
+    },
+
+    {
+      "src": "/privacy",
+      "dest": "/api/privacy.php"
+    }
   ]
 }
