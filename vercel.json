@@ -5,7 +5,6 @@
     "api/*.php": {
       "runtime": "vercel-php@0.7.3"
     },
-
     "api/events.js": {
       "maxDuration": 15
     }
@@ -13,47 +12,39 @@
 
   "routes": [
     {
-      "src": "/",
-      "dest": "/api/settings.php"
-    },
-
-    {
-      "src": "/settings",
-      "dest": "/api/settings.php"
-    },
-
-    {
-      "src": "/field",
-      "dest": "/api/field.php"
-    },
-
-    {
-      "src": "/install",
-      "dest": "/api/install.php"
-    },
-
-    {
-      "src": "/bind",
+      "src": "^/bind/?$",
       "dest": "/api/bind.php"
     },
-
     {
-      "src": "/events",
+      "src": "^/events/?$",
       "dest": "/api/events.js"
     },
-
     {
-      "src": "/contact",
+      "src": "^/install/?$",
+      "dest": "/api/install.php"
+    },
+    {
+      "src": "^/settings/?$",
+      "dest": "/api/settings.php"
+    },
+    {
+      "src": "^/field/?$",
+      "dest": "/api/field.php"
+    },
+    {
+      "src": "^/$",
+      "dest": "/api/settings.php"
+    },
+    {
+      "src": "^/contact/?$",
       "dest": "/api/contact.php"
     },
-
     {
-      "src": "/license",
+      "src": "^/license/?$",
       "dest": "/api/license.php"
     },
-
     {
-      "src": "/privacy",
+      "src": "^/privacy/?$",
       "dest": "/api/privacy.php"
     }
   ]
