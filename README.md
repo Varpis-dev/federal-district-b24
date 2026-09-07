@@ -1,19 +1,23 @@
-Federal District B24 — retry fix
+# Федеральный округ — FIX [object Object]
 
-Заменить:
-- api/events.js
-- vercel.json
+Проблема:
+в поле `Федеральный округ (строка)` стало записываться `[object Object]`.
 
-Не менять:
-- public/district.js
-- api/bind.php
-- api/field-v2.php
-- api/settings.php
+Причина:
+`district.js` в текущей версии приложения в некоторых ветках возвращает не строку,
+а объект. Старый `events.js` делал `String(result)`, поэтому объект превращался в
+`[object Object]`.
 
-Фикс:
-- retry AbortError/timeout/пустых ответов/429/5xx;
-- 3 попытки REST;
-- кэш списочных UF;
-- регион обрабатывается раньше города;
-- maxDuration /events = 45 секунд;
-- защита от рекурсии ONCRMLEADUPDATE сохранена.
+Что делает фикс:
+- извлекает название округа из объекта (`name`, `district`, `districtName`,
+  `federalDistrict`, `value`, `title`, `result`);
+- поддерживает вложенный объект;
+- категорически запрещает запись `[object Object]`;
+- если структура неизвестна — пишет её в Vercel Logs и НЕ портит поле;
+- лиды, где уже стоит `[object Object]`, при следующем ONCRMLEADUPDATE
+  будут исправлены на нормальный ФО, если округ определяется.
+
+Заменить только:
+`api/events.js`
+
+Остальные файлы не менять.

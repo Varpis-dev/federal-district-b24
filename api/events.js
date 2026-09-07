@@ -250,10 +250,101 @@ async function getFieldCodes(req, domain, accessToken) {
   };
 }
 
+function normalizeDistrictResult(result) {
+  if (result === null || result === undefined) {
+    return '';
+  }
+
+  if (typeof result === 'string' || typeof result === 'number') {
+    const value = String(result).trim();
+
+    // Никогда не разрешаем записать системное представление объекта.
+    if (value === '[object Object]') {
+      return '';
+    }
+
+    return value;
+  }
+
+  if (typeof result === 'object') {
+    // Поддерживаем разные формы результата district.js.
+    const candidates = [
+      result.name,
+      result.district,
+      result.districtName,
+      result.federalDistrict,
+      result.value,
+      result.title,
+      result.result
+    ];
+
+    for (const candidate of candidates) {
+      if (
+        typeof candidate === 'string' ||
+        typeof candidate === 'number'
+      ) {
+        const value = String(candidate).trim();
+
+        if (value && value !== '[object Object]') {
+          return value;
+        }
+      }
+    }
+
+    // Иногда полезное значение может лежать глубже.
+    for (const key of ['district', 'federalDistrict', 'result']) {
+      const nested = result[key];
+
+      if (nested && typeof nested === 'object') {
+        const nestedCandidates = [
+          nested.name,
+          nested.value,
+          nested.title,
+          nested.districtName
+        ];
+
+        for (const candidate of nestedCandidates) {
+          if (
+            typeof candidate === 'string' ||
+            typeof candidate === 'number'
+          ) {
+            const value = String(candidate).trim();
+
+            if (value && value !== '[object Object]') {
+              return value;
+            }
+          }
+        }
+      }
+    }
+
+    console.error(
+      '[fed] district.js returned unsupported object:',
+      JSON.stringify(result)
+    );
+
+    return '';
+  }
+
+  return '';
+}
+
 function calcDistrict(city, region) {
-  return String(
-    FederalDistrict.calcDistrictName(city || '', region || '') || ''
-  ).trim();
+  const rawResult = FederalDistrict.calcDistrictName(
+    city || '',
+    region || ''
+  );
+
+  const district = normalizeDistrictResult(rawResult);
+
+  if (!district && rawResult) {
+    console.error(
+      '[fed] district result could not be normalized:',
+      JSON.stringify(rawResult)
+    );
+  }
+
+  return district;
 }
 
 module.exports = async function handler(req, res) {
@@ -350,6 +441,13 @@ module.exports = async function handler(req, res) {
         district
       });
       return;
+    }
+
+    if (!district || district === '[object Object]') {
+      throw new Error(
+        'Защита: недопустимое значение Федерального округа: ' +
+        JSON.stringify(district)
+      );
     }
 
     await callBitrix(
