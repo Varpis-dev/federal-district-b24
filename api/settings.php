@@ -1,6 +1,27 @@
 <?php
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
+$placementOptions = [];
+
+if (isset($_REQUEST['PLACEMENT_OPTIONS'])) {
+    $decodedPlacementOptions = json_decode(
+        (string) $_REQUEST['PLACEMENT_OPTIONS'],
+        true
+    );
+
+    if (is_array($decodedPlacementOptions)) {
+        $placementOptions = $decodedPlacementOptions;
+    }
+}
+
+if (
+    isset($placementOptions['view']) &&
+    $placementOptions['view'] === 'deals_mass'
+) {
+    require __DIR__ . '/deals-mass.php';
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -106,6 +127,12 @@ button.primary {
     color: white;
 }
 
+button.mass {
+    background: #148a67;
+    border-color: #148a67;
+    color: white;
+}
+
 button:disabled {
     opacity: .55;
     cursor: not-allowed;
@@ -148,9 +175,11 @@ button:disabled {
 <br><br>
 
 <strong>Сделки:</strong>
-строковое поле сделки приложение не изменяет.
+автоматически строковое поле сделки приложение не изменяет.
 Большое поле самостоятельно рассчитывает ФО
 по городу + области сделки и показывает менеджера.
+Массовую простановку строкового поля можно запускать
+отдельной кнопкой ниже.
 
 </div>
 
@@ -300,6 +329,13 @@ button:disabled {
 Создать поля и подключить события
 </button>
 
+<button
+    class="mass"
+    id="massDealsBtn"
+>
+Массовое заполнение ФО в сделках
+</button>
+
 </div>
 
 
@@ -323,6 +359,12 @@ const saveBtn =
 const bindBtn =
     document.getElementById(
         'bindBtn'
+    );
+
+
+const massDealsBtn =
+    document.getElementById(
+        'massDealsBtn'
     );
 
 
@@ -1052,6 +1094,57 @@ async function runBind() {
 }
 
 
+
+function openDealsMassApplication() {
+
+    if (
+        typeof BX24.openApplication !==
+            'function'
+    ) {
+
+        throw new Error(
+            'В текущем контексте Bitrix24 недоступен BX24.openApplication.'
+        );
+    }
+
+
+    massDealsBtn.disabled =
+        true;
+
+
+    setStatus(
+        'Открываю массовое заполнение ФО в сделках...'
+    );
+
+
+    BX24.openApplication(
+        {
+            view:
+                'deals_mass'
+        },
+
+        function() {
+
+            massDealsBtn.disabled =
+                false;
+
+
+            setStatus(
+                'Окно массового заполнения закрыто.'
+            );
+        },
+
+        {
+            width:
+                1180,
+
+            title:
+                'Массовое заполнение ФО в сделках'
+        }
+    );
+}
+
+
 function startApplication() {
 
     if (
@@ -1138,6 +1231,33 @@ function startApplication() {
                                 );
                             }
                         );
+                }
+            );
+
+
+            massDealsBtn.addEventListener(
+                'click',
+                function() {
+
+                    try {
+
+                        openDealsMassApplication();
+
+                    } catch (error) {
+
+                        massDealsBtn.disabled =
+                            false;
+
+
+                        setStatus(
+                            'Ошибка открытия массового заполнения:\n' +
+                            String(
+                                error.message ||
+                                error
+                            ),
+                            true
+                        );
+                    }
                 }
             );
 
