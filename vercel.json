@@ -26,6 +26,10 @@
       "dest": "/api/settings.php"
     },
     {
+      "src": "^/deals-mass/?$",
+      "dest": "/api/deals-mass.php"
+    },
+    {
       "src": "^/field-v2/?$",
       "dest": "/api/field-v2.php"
     },
