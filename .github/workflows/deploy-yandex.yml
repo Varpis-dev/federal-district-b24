@@ -1,0 +1,88 @@
+name: Deploy to Yandex Cloud
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-yandex
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      YC_FOLDER_ID: ${{ vars.YC_FOLDER_ID }}
+      YC_REGISTRY: ${{ vars.YC_REGISTRY }}
+      YC_SA_ID: ${{ vars.YC_SA_ID }}
+      YC_CONTAINER_NAME: ${{ vars.YC_CONTAINER_NAME }}
+      PUBLIC_HOST: ${{ vars.PUBLIC_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Проверка настроек
+        run: |
+          for v in YC_FOLDER_ID YC_REGISTRY YC_SA_ID YC_CONTAINER_NAME; do
+            if [ -z "${!v}" ]; then echo "::error::Не задана переменная $v"; exit 1; fi
+          done
+          if [ -z "${{ secrets.YC_SA_JSON_KEY }}" ]; then echo "::error::Не задан секрет YC_SA_JSON_KEY"; exit 1; fi
+
+      - name: Установка Yandex Cloud CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /opt/yc -n
+          echo "/opt/yc/bin" >> "$GITHUB_PATH"
+
+      - name: Авторизация
+        env:
+          YC_KEY: ${{ secrets.YC_SA_JSON_KEY }}
+        run: |
+          printf '%s' "$YC_KEY" > /tmp/key.json
+          yc config set endpoint api.cloud.yandex.net:443
+          yc config set service-account-key /tmp/key.json
+          yc config set folder-id "$YC_FOLDER_ID"
+          REG_HOST="${YC_REGISTRY%%/*}"
+          yc iam create-token | docker login --username iam --password-stdin "$REG_HOST"
+
+      - name: Сборка и загрузка образа
+        run: |
+          IMAGE="$YC_REGISTRY/$YC_CONTAINER_NAME:${GITHUB_SHA::12}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Контейнер (создаётся при первом запуске)
+        run: |
+          if ! yc serverless container get --name "$YC_CONTAINER_NAME" >/dev/null 2>&1; then
+            yc serverless container create --name "$YC_CONTAINER_NAME"
+          fi
+          yc serverless container allow-unauthenticated-invoke --name "$YC_CONTAINER_NAME"
+          URL=$(yc serverless container get --name "$YC_CONTAINER_NAME" --format json | jq -r .url)
+          if [ -z "$PUBLIC_HOST" ]; then
+            HOST=$(echo "$URL" | sed -E 's#^https?://##; s#/.*$##')
+            echo "PUBLIC_HOST=$HOST" >> "$GITHUB_ENV"
+          fi
+
+      - name: Новая ревизия
+        run: |
+          yc serverless container revision deploy \
+            --container-name "$YC_CONTAINER_NAME" \
+            --image "$IMAGE" \
+            --cores 1 \
+            --core-fraction 100 \
+            --memory 512MB \
+            --concurrency 4 \
+            --execution-timeout 60s \
+            --service-account-id "$YC_SA_ID" \
+            --environment "PUBLIC_HOST=$PUBLIC_HOST"
+
+      - name: Проверка
+        run: |
+          sleep 5
+          curl -fsS "https://$PUBLIC_HOST/__health"
+          echo
+          echo "### Готово: https://$PUBLIC_HOST/" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Очистка
+        if: always()
+        run: rm -f /tmp/key.json
